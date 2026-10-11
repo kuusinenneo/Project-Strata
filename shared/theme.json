@@ -1,0 +1,62 @@
+{
+  "name": "Strata Dark",
+  "version": 1,
+  "colors": {
+    "bg": "#1e1f22",
+    "bgDark": "#161719",
+    "bgPanel": "#26272b",
+    "bgLight": "#34363b",
+    "bgInput": "#1a1b1e",
+    "bgHover": "#3c3e44",
+    "border": "#3c3e44",
+    "borderLight": "#44464c",
+    "borderSubtle": "#2a2b2f",
+    "scrollHandleHover": "#55585f",
+    "text": "#d6d8dc",
+    "textBright": "#e6e8ec",
+    "textDim": "#8c9098",
+    "textDisabled": "#64676e",
+    "textHeader": "#b0b4ba",
+    "accent": "#409cff",
+    "accentSoft": "#9fc6ff",
+    "selection": "#2c4a6e",
+    "danger": "#ff5252",
+    "canvasBg": "#18191b",
+    "checkerLight": "#3a3b3f",
+    "checkerDark": "#2e2f33",
+    "clipVideo": "#466ebe",
+    "clipImage": "#3c8c96",
+    "clipAudio": "#3c9664",
+    "clipText": "#965ab4"
+  },
+  "fonts": {
+    "ui": ["Segoe UI", "Inter", "Helvetica Neue", "Arial", "sans-serif"],
+    "mono": ["Cascadia Mono", "Consolas", "Menlo", "monospace"],
+    "sizeSmall": 11,
+    "sizeNormal": 12,
+    "sizeLarge": 14,
+    "weightHeader": 600
+  },
+  "spacing": {
+    "xs": 2,
+    "sm": 4,
+    "md": 8,
+    "lg": 12,
+    "xl": 16,
+    "radius": 3,
+    "radiusLarge": 5,
+    "panelHeaderHeight": 26,
+    "toolButtonSize": 30,
+    "iconSize": 18
+  },
+  "icons": {
+    "directory": "icons",
+    "viewBox": 24,
+    "strokeWidth": 1.6,
+    "note": "24x24 SVGs drawn with currentColor. Tool and UI icons use only <path> elements (stroked by default; fill=\"currentColor\" stroke=\"none\" for solid parts, optional opacity) so both apps can render them without a full SVG engine. App logos in app/ are full SVG.",
+    "app": {
+      "video": "app/strata-video",
+      "photo": "app/strata-photo"
+    }
+  }
+}

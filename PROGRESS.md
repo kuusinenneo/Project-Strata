@@ -1,38 +1,21 @@
-# Strata — Progress
+# Project Strata — Progress
 
-## Done
-- SPEC.md saved
-- Environment: Windows 11, Python 3.13, venv in `.venv`, requirements.txt (FFmpeg via PATH or bundled imageio-ffmpeg), README setup/run instructions
-- Project data model, editing ops (overwrite/split/trim/ripple/join/snap), undo/redo, JSON save/load — with tests
-- Media layer: FFmpeg discovery, probing, frame-accurate video decoding, image loading, async audio decoding + waveform peaks — with tests
-- Rendering: compositor (track stacking, visibility/solo, scale/position + gradual zoom, opacity, fades, cross dissolve), colour effects + blur, text overlays with 4 presets, audio mixer (volume, fades, equal-power crossfades) — with tests
-- Export pipeline: settings (fps/resolution/CRF presets/custom bitrate/x264 speed/audio bitrate), size estimate, render→FFmpeg pipe (H.264 + AAC), progress + ETA, cancel — with tests
-- UI
-  - Dark theme, own QPainter-drawn icon set
-  - Main window with all panels as QDockWidgets + Window → Reset Layout
-  - Source monitor (in/out marks, insert/overwrite, drag to timeline) with Effect Controls tab
-  - Program monitor with transport controls, J/K/L shuttle, sequence in/out
-  - Project panel (import, thumbnails, drag to timeline, OS file drops) + Effects tab (effects, transitions, text presets)
-  - Timeline: ruler, playhead, zoom slider, track headers (+ / remove-empty, visibility/mute, lock, solo), move/trim/razor/ripple/text tools, snapping, rubber-band selection, waveforms, context menus
-  - Tools strip, stereo audio meters with peak hold
-  - Export dialog with estimated size, progress, time remaining, cancel
-  - Keyboard shortcuts per spec (+ extras: B, T, Ctrl+K, Ctrl+J, arrows, Home/End)
-  - Headless UI tests (layout, editing, mouse tools, drag & drop, shortcuts, save/load, export dialog)
-- End-to-end check: app launched on Windows with real media, real audio playback and meters verified
-- Separate audio/video of linked clips: Alt+click single-part selection, Unlink/Link (Ctrl+L),
-  linked-selection toggle (timeline toolbar, Ctrl+Shift+L), "Delete audio/video only" context
-  action, Alt+trim of one part, dangling links cleaned up automatically
-- Scrubbing performance: monitor frames rendered on a background thread (newest request wins),
-  fast keyframe frames while scrubbing with automatic exact refinement, timeline repaints only
-  the playhead strips (UI time per scrub event 44 ms → ~8 ms median)
-- Windows packaging: PyInstaller onedir windowed build (`build.bat`, `strata.spec`), bundled
-  FFmpeg + license notice/GPLv3 text, app icon + version info, resource lookup for source and
-  exe, `--self-test` mode, crash log; unused Qt libraries trimmed (271 MB folder)
+Spec: [PHOTO_SPEC.md](PHOTO_SPEC.md). Strata Video's own history: [video/PROGRESS.md](video/PROGRESS.md).
 
-## In progress
-- (nothing)
+## Phase 1: restructure the repo — done
+- [x] PHOTO_SPEC.md saved
+- [x] Video editor moved into `video/` (code, tests, spec, build files, licenses)
+- [x] Renamed to "Strata Video": window title, About menu, exe `StrataVideo.exe` in `video\dist\StrataVideo\`
+      (exe version info "Strata Video"), crash-log folder, project-file app tag, READMEs.
+      There is no separate installer; the PyInstaller output folder is the distributable.
+- [x] `shared/`: `theme.json` (colours, fonts, spacing, icon conventions), 54 SVG UI/tool icons,
+      Strata Video + Strata Photo app logos (.svg/.ico/.png), icon generator
+- [x] Strata Video reads colours/fonts/spacing from `shared/theme.json` (stylesheet, palette,
+      custom-painted widgets, icons); the exe bundles the theme and icon
+- [x] Root README describes both apps; `video/README.md`, `shared/README.md`
+- [x] Verified: 51 tests pass, runs from source, `build.bat` builds, self-test passes, exe opens
+      with title "Untitled — Strata Video"
 
-## Left / possible next steps
-- Pitch-preserving audio when clip speed ≠ 1 (currently resampled, so pitch shifts)
-- Keyframes beyond the start→end gradual zoom/pan
-- Proxy files / background frame cache for very large (4K+) sources
+## Phase 2: Strata Photo — not started
+
+## Phase 3: Strata Photo exe — not started

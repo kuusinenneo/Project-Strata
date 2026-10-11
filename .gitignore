@@ -219,7 +219,15 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Strata packaging (PyInstaller output; strata.spec is tracked)
-/build/
-/dist/
+# Strata Video packaging (PyInstaller output; strata.spec is tracked)
+/video/build/
+/video/dist/
 !strata.spec
+
+# Strata Photo (.NET build output)
+/photo/**/bin/
+/photo/**/obj/
+/photo/publish/
+/photo/TestResults/
+*.user
+.vs/
