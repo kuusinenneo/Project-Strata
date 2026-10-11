@@ -25,6 +25,9 @@
 - Scrubbing performance: monitor frames rendered on a background thread (newest request wins),
   fast keyframe frames while scrubbing with automatic exact refinement, timeline repaints only
   the playhead strips (UI time per scrub event 44 ms → ~8 ms median)
+- Windows packaging: PyInstaller onedir windowed build (`build.bat`, `strata.spec`), bundled
+  FFmpeg + license notice/GPLv3 text, app icon + version info, resource lookup for source and
+  exe, `--self-test` mode, crash log; unused Qt libraries trimmed (271 MB folder)
 
 ## In progress
 - (nothing)

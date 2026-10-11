@@ -5,7 +5,7 @@ import os
 from typing import Optional
 
 from PySide6.QtCore import QSettings, Qt, QTimer
-from PySide6.QtGui import QAction, QKeySequence
+from PySide6.QtGui import QAction, QIcon, QKeySequence
 from PySide6.QtWidgets import (QComboBox, QDialog, QDialogButtonBox, QDockWidget,
                                QFileDialog, QFormLayout, QMainWindow, QMessageBox,
                                QSpinBox, QTabWidget, QTextBrowser, QVBoxLayout, QWidget)
@@ -14,6 +14,7 @@ from .. import APP_NAME, __version__
 from ..media.ffmpeg import ffmpeg_version, find_ffmpeg
 from ..model.io import PROJECT_EXTENSION
 from ..render.mixer import AudioMixer
+from ..resources import asset_path
 from .controller import EditorController
 from .effect_controls import EffectControls
 from .effects_panel import EffectsPanel
@@ -123,7 +124,8 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.controller = EditorController(self)
         self.settings = QSettings("Strata", "Strata")
-        self.setWindowIcon(icon("logo"))
+        ico = asset_path("strata.ico")
+        self.setWindowIcon(QIcon(str(ico)) if ico.is_file() else icon("logo"))
         self.resize(1600, 960)
         self.setDockNestingEnabled(True)
         self.setDockOptions(QMainWindow.AllowNestedDocks | QMainWindow.AllowTabbedDocks

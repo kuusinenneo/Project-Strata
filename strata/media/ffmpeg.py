@@ -6,16 +6,22 @@ import os
 import shutil
 import subprocess
 
+from ..resources import bundled_ffmpeg
+
 
 @functools.lru_cache(maxsize=1)
 def find_ffmpeg() -> str:
     """Return a usable ffmpeg executable path.
 
-    Order: $STRATA_FFMPEG, ffmpeg on PATH, the binary bundled with imageio-ffmpeg.
+    Order: $STRATA_FFMPEG, the copy shipped inside the packaged app, ffmpeg on
+    PATH, the binary bundled with imageio-ffmpeg (running from source).
     """
     env = os.environ.get("STRATA_FFMPEG")
     if env and os.path.isfile(env):
         return env
+    bundled = bundled_ffmpeg()
+    if bundled:
+        return bundled
     on_path = shutil.which("ffmpeg")
     if on_path:
         return on_path

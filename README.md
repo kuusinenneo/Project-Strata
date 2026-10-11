@@ -10,8 +10,9 @@ text overlays, undo/redo, JSON project files and MP4 (H.264 + AAC) export.
 
 - Windows 10/11, macOS or Linux
 - Python 3.10+ (developed on Python 3.13)
-- FFmpeg — optional on PATH. If `ffmpeg` isn't on your PATH, Strata uses the FFmpeg binary
-  bundled with the `imageio-ffmpeg` package (installed by `requirements.txt`). To use a
+- FFmpeg — nothing to install. The packaged app ships its own copy. From source, Strata
+  uses `ffmpeg` on your PATH if present, otherwise the FFmpeg binary bundled with the
+  `imageio-ffmpeg` package (installed by `requirements.txt`). To use a
   system FFmpeg on Windows: `winget install Gyan.FFmpeg`. You can also point Strata to a
   specific binary with the `STRATA_FFMPEG` environment variable.
 
@@ -30,6 +31,26 @@ pip install -r requirements.txt
 python main.py                    # or: python -m strata
 python main.py path\to\project.strata.json   # open a project directly
 ```
+
+## Build a Windows app (.exe)
+
+```powershell
+.uild.bat           # build + self-test  ->  dist\Strata\Strata.exe
+.uild.bat notest    # build only
+```
+
+`build.bat` creates the venv if needed, installs `requirements-build.txt` (adds
+PyInstaller), builds with `strata.spec` and then runs `Strata.exe --self-test`, which
+checks FFmpeg, decoding, an export and the audio device inside the packaged app.
+
+The result is a folder, `dist\Strata\`, that you can zip or copy to another Windows
+PC; run `Strata.exe` inside it. It is a windowed app (no console) in PyInstaller's
+onedir mode for fast startup, and it already contains Python, Qt and FFmpeg, so the
+other PC needs nothing installed. FFmpeg's license notice and the GPLv3 text are in
+`dist\Strata\licenses\`. Unexpected errors in the packaged app are shown in a dialog
+and logged to `%LOCALAPPDATA%\Strata\strata-errors.log`.
+
+To regenerate the app icon (`assets/strata.ico`): `python tools\make_icon.py`.
 
 ## Run the tests
 
@@ -102,6 +123,10 @@ strata/
   export/     export settings and the FFmpeg MP4 pipeline
   ui/         main window, controller, monitors, timeline, panels, dialogs, theme, icons
 tests/        pytest suite
+assets/       app icon
+licenses/     third-party license texts shipped with the app
+tools/        helper scripts (icon generator)
+strata.spec   PyInstaller build definition (used by build.bat)
 ```
 
 Preview and export share one renderer, so the exported video matches what the Program

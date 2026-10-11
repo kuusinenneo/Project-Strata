@@ -218,3 +218,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Strata packaging (PyInstaller output; strata.spec is tracked)
+/build/
+/dist/
+!strata.spec
