@@ -332,3 +332,99 @@ def test_drag_drop_media_and_effects(win, media_dir, qapp):
     mime = win.project_panel.tree.mimeData([items[1]])
     _drop(canvas, mime, QPoint(100, int(RULER_H + v2.y + 20)), Qt.ControlModifier)
     assert c.project.sequence.clips[v2_clips[1].id].start == pytest.approx(before + 5.0)
+
+
+def _linked_pair(win, media_dir):
+    c = win.controller
+    (vid,) = media(win, media_dir, "video.mp4")
+    v, a = c.add_media_to_timeline([vid.id], c.project.sequence.video_tracks[0].id, 0.0)
+    assert v.link_id and v.link_id == a.link_id
+    canvas = win.timeline.canvas
+    canvas.pps, canvas.hscroll = 100.0, 0.0
+    return c, canvas, v, a
+
+
+def test_alt_click_deletes_only_audio(win, media_dir):
+    c, canvas, v, a = _linked_pair(win, media_dir)
+    c.clear_selection()
+    QTest.mouseClick(canvas, Qt.LeftButton, Qt.NoModifier, _clip_center(canvas, a))
+    assert c.selection == {v.id, a.id}  # linked selection picks both
+    QTest.mouseClick(canvas, Qt.LeftButton, Qt.AltModifier, _clip_center(canvas, a))
+    assert c.selection == {a.id}
+    win.a_delete.trigger()
+    clips = c.project.sequence.clips
+    assert v.id in clips and a.id not in clips
+    assert clips[v.id].link_id is None  # no dangling link left behind
+    c.do_undo()
+    assert c.project.sequence.clips[a.id].link_id == c.project.sequence.clips[v.id].link_id
+
+
+def test_unlink_then_edit_separately(win, media_dir):
+    c, canvas, v, a = _linked_pair(win, media_dir)
+    c.select([v.id])
+    win.a_link.trigger()  # Ctrl+L unlinks
+    seq = c.project.sequence
+    assert seq.clips[v.id].link_id is None and seq.clips[a.id].link_id is None
+    QTest.mouseClick(canvas, Qt.LeftButton, Qt.NoModifier, _clip_center(canvas, seq.clips[a.id]))
+    assert c.selection == {a.id}
+    c.move_clips({a.id: (1.0, seq.clips[a.id].track_id)})
+    assert c.project.sequence.clips[a.id].start == pytest.approx(1.0)
+    assert c.project.sequence.clips[v.id].start == pytest.approx(0.0)
+    c.select([v.id, a.id])
+    win.a_link.trigger()  # Ctrl+L links them again
+    seq = c.project.sequence
+    assert seq.clips[v.id].link_id and seq.clips[v.id].link_id == seq.clips[a.id].link_id
+
+
+def test_linked_selection_toggle(win, media_dir):
+    c, canvas, v, a = _linked_pair(win, media_dir)
+    win.timeline.link_btn.click()
+    assert not c.linked_selection and not win.a_linked_sel.isChecked()
+    QTest.mouseClick(canvas, Qt.LeftButton, Qt.NoModifier, _clip_center(canvas, v))
+    assert c.selection == {v.id}
+    # razor and ripple act on the clicked part only
+    c.set_tool("razor")
+    r = canvas.clip_rect(v)
+    QTest.mouseClick(canvas, Qt.LeftButton, Qt.NoModifier, QPoint(int(r.left() + 100), int(r.center().y())))
+    seq = c.project.sequence
+    assert len(seq.clips_on(seq.video_tracks[0].id)) == 2
+    assert len(seq.clips_on(seq.audio_tracks[0].id)) == 1
+    c.set_tool("ripple")
+    QTest.mouseClick(canvas, Qt.LeftButton, Qt.NoModifier, _clip_center(canvas, seq.clips_on(seq.audio_tracks[0].id)[0]))
+    seq = c.project.sequence
+    assert not seq.clips_on(seq.audio_tracks[0].id) and len(seq.clips_on(seq.video_tracks[0].id)) == 2
+    win.a_linked_sel.trigger()
+    assert c.linked_selection and win.timeline.link_btn.isChecked()
+
+
+def test_alt_trim_only_one_part(win, media_dir):
+    c, canvas, v, a = _linked_pair(win, media_dir)
+    c.set_snapping(False)
+    r = canvas.clip_rect(a)
+    edge = QPoint(int(r.right()) - 2, int(r.center().y()))
+    QTest.mousePress(canvas, Qt.LeftButton, Qt.AltModifier, edge)
+    QTest.mouseMove(canvas, QPoint(edge.x() - 50, edge.y()))
+    QTest.mouseMove(canvas, QPoint(edge.x() - 100, edge.y()))
+    QTest.mouseRelease(canvas, Qt.LeftButton, Qt.AltModifier, QPoint(edge.x() - 100, edge.y()))
+    seq = c.project.sequence
+    assert seq.clips[a.id].duration == pytest.approx(2.0, abs=0.05)
+    assert seq.clips[v.id].duration == pytest.approx(3.0, abs=0.05)
+
+
+def test_async_monitor_rendering(win, media_dir, qapp):
+    c = win.controller
+    (vid,) = media(win, media_dir, "video.mp4")
+    c.add_media_to_timeline([vid.id], None, 0.0)
+    got = []
+    win.program.renderer.frame_ready.connect(lambda rid, img: got.append(img))
+    for i in range(15):  # rapid scrub: fast frames, then a refined exact frame
+        c.set_playhead(2.5 - i * 0.15)
+        qapp.processEvents()
+    for _ in range(100):
+        QTest.qWait(10)
+        if len(got) >= 2:
+            break
+    QTest.qWait(250)  # allow the refine pass
+    assert got and win.program.view.image is not None
+    exact = win.program.render_frame(c.playhead)
+    assert win.program.view.image.convertToFormat(exact.format()) == exact

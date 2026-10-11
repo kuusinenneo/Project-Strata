@@ -66,3 +66,19 @@ def test_audio_store_async(media_dir):
     store.request("m1", str(media_dir / "video.mp4"))
     assert done.wait(10)
     assert store.get("m1") is not None and store.get("m1").duration > 2.5
+
+
+def test_decoder_fast_mode_then_exact(media_dir, tmp_path):
+    import subprocess
+    from strata.media.ffmpeg import find_ffmpeg
+    path = str(tmp_path / "longgop.mp4")
+    subprocess.run([find_ffmpeg(), "-hide_banner", "-loglevel", "error", "-y", "-f", "lavfi",
+                    "-i", "testsrc=size=160x120:rate=25:duration=4", "-c:v", "libx264",
+                    "-g", "100", "-pix_fmt", "yuv420p", path], check=True)
+    dec = VideoDecoder(path)
+    dec.frame_at(3.5)  # move far ahead
+    fast = dec.frame_at(2.0, accurate=False)  # backwards: seek to keyframe, small budget
+    assert fast is not None and dec._cur_t < 2.0
+    exact = dec.frame_at(2.0)
+    assert abs(dec._cur_t - 2.0) < 0.05 and exact is not None
+    dec.close()

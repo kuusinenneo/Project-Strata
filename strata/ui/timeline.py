@@ -9,7 +9,7 @@ import math
 from dataclasses import dataclass
 from typing import Optional
 
-from PySide6.QtCore import QPointF, QRectF, Qt, QTimer, Signal
+from PySide6.QtCore import QPointF, QRect, QRectF, Qt, QTimer, Signal
 from PySide6.QtGui import QBrush, QColor, QFont, QPainter, QPainterPath, QPen, QPolygonF
 from PySide6.QtWidgets import (QHBoxLayout, QLabel, QMenu, QScrollBar, QSizePolicy, QSlider,
                                QToolButton, QVBoxLayout, QWidget)
@@ -213,6 +213,7 @@ class TimelineCanvas(QWidget):
         self._drop_ghosts: list[tuple[str, float, float, str]] = []  # (track_id, start, end, kind)
         self._drop_clip: Optional[str] = None
         self._band: Optional[QRectF] = None
+        self._dirty = QRectF()
         self.small_font = QFont()
         self.small_font.setPixelSize(11)
         self.tiny_font = QFont()
@@ -298,14 +299,20 @@ class TimelineCanvas(QWidget):
         self.view_changed.emit()
         self.update()
 
-    def ensure_playhead_visible(self) -> None:
+    def ensure_playhead_visible(self) -> bool:
+        """Scroll so the playhead is on screen. Returns True if the view scrolled."""
         x = self.x_of(self.c.playhead)
-        if x > self.width() - 20:
+        if x > self.width() - 20 or x < 0:
             self.hscroll = max(0.0, self.c.playhead * self.pps - self.width() * 0.15)
             self.view_changed.emit()
-        elif x < 0:
-            self.hscroll = max(0.0, self.c.playhead * self.pps - self.width() * 0.15)
-            self.view_changed.emit()
+            return True
+        return False
+
+    def update_playhead(self, old_t: float, new_t: float) -> None:
+        """Repaint only the strips covered by the old and new playhead."""
+        for t in (old_t, new_t):
+            x = int(self.x_of(t))
+            self.update(QRect(x - 8, 0, 16, self.height()))
 
     # ------------------------------------------------------------------ snapping
     def _snap(self, t: float, exclude=(), points=None) -> float:
@@ -318,8 +325,9 @@ class TimelineCanvas(QWidget):
         return v
 
     # ------------------------------------------------------------------ painting
-    def paintEvent(self, _):
+    def paintEvent(self, e):
         p = QPainter(self)
+        self._dirty = QRectF(e.rect())
         try:
             self._paint(p)
         finally:
@@ -353,9 +361,10 @@ class TimelineCanvas(QWidget):
             p.fillRect(QRectF(self.x_of(a), RULER_H, (b - a) * self.pps, h), QColor(64, 156, 255, 18))
 
         dragging_ids = set(self._drag.get("ids", ())) if self._mode in ("move", "trim") else set()
+        dirty = self._dirty
         for clip in seq.clips.values():
             r = self.clip_rect(clip)
-            if r is None or r.right() < 0 or r.left() > w:
+            if r is None or not r.adjusted(-2, -2, 2, 2).intersects(dirty):
                 continue
             ghost = clip.id in dragging_ids
             self._paint_clip(p, clip, r, faded=ghost)
@@ -468,7 +477,7 @@ class TimelineCanvas(QWidget):
             alpha = 110
         col.setAlpha(alpha)
         p.save()
-        visible = r.intersected(QRectF(-10, 0, self.width() + 20, self.height()))
+        visible = r.intersected(self._dirty.adjusted(-2, 0, 2, 0))
         p.setClipRect(r.adjusted(0, 0, 1, 1))
         p.fillRect(r, col)
         # title strip
@@ -607,9 +616,11 @@ class TimelineCanvas(QWidget):
                 else:
                     self.c.razor(clip.id, tt)
             return
+        alt = bool(mods & Qt.AltModifier)
         if tool == "ripple":
             if clip is not None:
-                self.c.delete_clips([clip.id], ripple=True)
+                targets = [clip] if alt else self.c.with_linked([clip])
+                self.c.delete_clips([x.id for x in targets], ripple=True)
             elif row is not None:
                 if not self.c.remove_gap(row.track.id, t):
                     self.c.message.emit("Click a clip to ripple delete it, or a gap to close it")
@@ -624,20 +635,26 @@ class TimelineCanvas(QWidget):
         # selection tool
         eclip, edge = self._edge_hit(pos)
         if eclip is not None:
-            if eclip.id not in self.c.selection:
-                self.c.select([eclip.id])
+            if eclip.id not in self.c.selection or alt:
+                self.c.select([eclip.id], single=alt)
             self._mode = "trim"
-            self._drag = {"id": eclip.id, "edge": edge, "ids": [eclip.id], "preview": None}
+            self._drag = {"id": eclip.id, "edge": edge, "ids": [eclip.id], "preview": None,
+                          "solo": alt}
             return
         if clip is not None:
+            # Alt+click picks only the audio or only the video part of a linked clip
             if mods & Qt.ControlModifier:
-                self.c.select([clip.id], toggle=True)
+                self.c.select([clip.id], toggle=True, single=alt)
             elif mods & Qt.ShiftModifier:
-                self.c.select([clip.id], add=True)
-            elif clip.id not in self.c.selection:
-                self.c.select([clip.id])
+                self.c.select([clip.id], add=True, single=alt)
+            elif alt or clip.id not in self.c.selection:
+                self.c.select([clip.id], single=alt)
             self._mode = "pending_move"
-            self._drag = {"anchor_t": t, "anchor_clip": clip.id}
+            # A plain click (no drag) on an already-selected clip narrows the
+            # selection to it on release; dragging moves the whole selection.
+            plain = not (mods & (Qt.ControlModifier | Qt.ShiftModifier | Qt.AltModifier))
+            self._drag = {"anchor_t": t, "anchor_clip": clip.id,
+                          "reselect": clip.id if plain else None}
             return
         if not (mods & (Qt.ControlModifier | Qt.ShiftModifier)):
             self.c.clear_selection()
@@ -686,10 +703,13 @@ class TimelineCanvas(QWidget):
             pv = self._drag.get("preview")
             if pv is not None:
                 clip, s, en = pv
+                solo = self._drag.get("solo", False)
                 if self._drag["edge"] == "left":
-                    self.c.trim_clip(clip.id, "left", s)
+                    self.c.trim_clip(clip.id, "left", s, solo)
                 else:
-                    self.c.trim_clip(clip.id, "right", en)
+                    self.c.trim_clip(clip.id, "right", en, solo)
+        elif mode == "pending_move" and self._drag.get("reselect"):
+            self.c.select([self._drag["reselect"]])
         elif mode == "band" and self._band is not None:
             band = self._band
             ids = [c.id for c in self.seq.clips.values()
@@ -832,12 +852,18 @@ class TimelineCanvas(QWidget):
             m.addAction("Cut at playhead", lambda: self.c.cut_at(self.c.playhead))
             m.addAction("Delete", lambda: self.c.delete_selection())
             m.addAction("Ripple delete", lambda: self.c.delete_selection(ripple=True))
+            if clip.link_id:
+                part = "audio" if clip.kind == "audio" else "video"
+                m.addAction(f"Delete {part} only (keep the linked part)",
+                            lambda: self.c.delete_clips([clip.id]))
             m.addSeparator()
             m.addAction("Join selected clips (close gaps)", self.c.join_selected)
-            if clip.link_id:
-                m.addAction("Unlink", lambda: self.c.link_selected(False))
+            if any(self.c.clip(cid) and self.c.clip(cid).link_id for cid in self.c.selection):
+                m.addAction(icon("unlink"), "Unlink audio and video\tCtrl+L",
+                            lambda: self.c.link_selected(False))
             elif len(self.c.selection) > 1:
-                m.addAction("Link", lambda: self.c.link_selected(True))
+                m.addAction(icon("link"), "Link selected clips\tCtrl+L",
+                            lambda: self.c.link_selected(True))
             m.addSeparator()
             m.addAction("Effect controls…", lambda: self.clip_activated.emit(clip.id))
         elif row is not None:
@@ -979,6 +1005,7 @@ class TimelinePanel(QWidget):
     def __init__(self, controller, parent=None):
         super().__init__(parent)
         self.c = controller
+        self._last_playhead = controller.playhead
         self.canvas = TimelineCanvas(controller)
         self.headers = HeaderColumn(controller)
         self.hbar = QScrollBar(Qt.Horizontal)
@@ -994,6 +1021,14 @@ class TimelinePanel(QWidget):
         self.snap_btn.setToolTip("Snapping (S)")
         self.snap_btn.toggled.connect(controller.set_snapping)
         controller.snapping_changed.connect(self.snap_btn.setChecked)
+        self.link_btn = QToolButton()
+        self.link_btn.setIcon(icon("link"))
+        self.link_btn.setCheckable(True)
+        self.link_btn.setChecked(controller.linked_selection)
+        self.link_btn.setToolTip("Linked selection: when on, clicking a clip also selects its linked "
+                                 "audio/video.\nTurn off (or Alt+click) to edit audio and video separately.")
+        self.link_btn.toggled.connect(controller.set_linked_selection)
+        controller.linked_selection_changed.connect(self._sync_link_btn)
 
         def tb(name, tip, slot):
             b = QToolButton()
@@ -1009,6 +1044,7 @@ class TimelinePanel(QWidget):
         self.seq_label.setStyleSheet("color:#8c9098;")
         top.addWidget(self.seq_label)
         top.addStretch(1)
+        top.addWidget(self.link_btn)
         top.addWidget(self.snap_btn)
         top.addSpacing(10)
         top.addWidget(tb("minus", "Zoom out (-)", lambda: self.canvas.zoom(1 / 1.25)))
@@ -1050,6 +1086,11 @@ class TimelinePanel(QWidget):
         QTimer.singleShot(0, self._sync_bars)
 
     # ------------------------------------------------------------------ sync
+    def _sync_link_btn(self, on: bool) -> None:
+        self.link_btn.blockSignals(True)
+        self.link_btn.setChecked(on)
+        self.link_btn.blockSignals(False)
+
     def _project_changed(self) -> None:
         self.headers.rebuild()
         seq = self.c.project.sequence
@@ -1066,8 +1107,12 @@ class TimelinePanel(QWidget):
     def _playhead_changed(self, t: float) -> None:
         seq = self.c.project.sequence
         self.headers.tc.setText(timecode(t, seq.fps))
-        self.canvas.ensure_playhead_visible()
-        self.canvas.update()
+        old = self._last_playhead
+        self._last_playhead = t
+        if self.canvas.ensure_playhead_visible():
+            self.canvas.update()
+        else:
+            self.canvas.update_playhead(old, t)
 
     def _sync_bars(self) -> None:
         cv = self.canvas

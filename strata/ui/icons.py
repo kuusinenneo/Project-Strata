@@ -129,6 +129,17 @@ def _draw(name: str, p: QPainter, c: QColor) -> None:  # noqa: C901 - one branch
         p.setPen(_pen(c, 2))
         p.drawLine(QPointF(7, 7), QPointF(17, 17))
         p.drawLine(QPointF(17, 7), QPointF(7, 17))
+    elif name in ("link", "unlink"):
+        p.setPen(_pen(c, 1.8))
+        p.setBrush(Qt.NoBrush)
+        if name == "link":
+            p.drawRoundedRect(QRectF(3, 9, 10, 6), 3, 3)
+            p.drawRoundedRect(QRectF(11, 9, 10, 6), 3, 3)
+        else:
+            p.drawRoundedRect(QRectF(2, 9, 9, 6), 3, 3)
+            p.drawRoundedRect(QRectF(13, 9, 9, 6), 3, 3)
+            p.drawLine(QPointF(12, 4), QPointF(12, 7))
+            p.drawLine(QPointF(12, 17), QPointF(12, 20))
     elif name == "magnet":
         p.setPen(_pen(c, 3))
         p.setBrush(Qt.NoBrush)

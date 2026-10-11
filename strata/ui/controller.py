@@ -29,6 +29,7 @@ class EditorController(QObject):
     playhead_changed = Signal(float)
     tool_changed = Signal(str)
     snapping_changed = Signal(bool)
+    linked_selection_changed = Signal(bool)
     audio_loaded = Signal(str)  # media id (emitted from worker threads; queued)
     history_changed = Signal()
     message = Signal(str)
@@ -41,6 +42,8 @@ class EditorController(QObject):
         self.playhead = 0.0
         self.tool = "select"
         self.snapping = True
+        # When on, clicking a clip also selects its linked audio/video partner.
+        self.linked_selection = True
         self.audio_store = AudioStore()
         self.audio_store.listeners.append(self.audio_loaded.emit)
 
@@ -53,6 +56,7 @@ class EditorController(QObject):
         self.undo.push(label, merge_key)
 
     def _done(self, structure: bool = True) -> None:
+        edits.prune_links(self.seq)
         self._prune_selection()
         if structure:
             self.project_changed.emit()
@@ -71,12 +75,14 @@ class EditorController(QObject):
     def clip(self, clip_id: str) -> Optional[Clip]:
         return self.seq.clips.get(clip_id)
 
-    def with_linked(self, clips: Iterable[Clip]) -> list[Clip]:
+    def with_linked(self, clips: Iterable[Clip], force: bool = False) -> list[Clip]:
+        """Add linked partners (only while linked selection is on, unless ``force``)."""
         out: dict[str, Clip] = {}
         for c in clips:
             out[c.id] = c
-            for o in self.seq.linked(c):
-                out[o.id] = o
+            if self.linked_selection or force:
+                for o in self.seq.linked(c):
+                    out[o.id] = o
         return list(out.values())
 
     def editable(self, clips: Iterable[Clip]) -> list[Clip]:
@@ -141,13 +147,23 @@ class EditorController(QObject):
         self.snapping = bool(on)
         self.snapping_changed.emit(self.snapping)
 
-    def select(self, clip_ids: Iterable[str], add: bool = False, toggle: bool = False) -> None:
+    def set_linked_selection(self, on: bool) -> None:
+        self.linked_selection = bool(on)
+        self.linked_selection_changed.emit(self.linked_selection)
+        self.message.emit("Linked selection on: audio and video are selected together" if on else
+                          "Linked selection off: audio and video can be selected separately")
+
+    def select(self, clip_ids: Iterable[str], add: bool = False, toggle: bool = False,
+               single: bool = False) -> None:
+        """Select clips. Linked partners are included unless ``single`` (Alt+click)
+        or linked selection is turned off."""
         ids = set()
         for cid in clip_ids:
             c = self.clip(cid)
             if c is not None:
                 ids.add(c.id)
-                ids.update(o.id for o in self.seq.linked(c))
+                if self.linked_selection and not single:
+                    ids.update(o.id for o in self.seq.linked(c))
         if toggle:
             new = self.selection ^ ids
         elif add:
@@ -307,14 +323,16 @@ class EditorController(QObject):
         edits.move_clips(self.seq, moves)
         self._done()
 
-    def trim_clip(self, clip_id: str, edge: str, new_time: float) -> None:
+    def trim_clip(self, clip_id: str, edge: str, new_time: float, solo: bool = False) -> None:
+        """Trim one edge. Linked partners sharing that edge follow unless ``solo``."""
         clip = self.clip(clip_id)
         if clip is None or self.is_locked(clip.track_id):
             return
         self._push("Trim clip")
         old = clip.start if edge == "left" else clip.end
         delta = new_time - old
-        for c in [clip] + self.editable(self.seq.linked(clip)):
+        partners = self.editable(self.seq.linked(clip)) if (self.linked_selection and not solo) else []
+        for c in [clip] + partners:
             # Linked partners follow if they share the edge being trimmed.
             if c is not clip and abs((c.start if edge == "left" else c.end) - old) > 1e-3:
                 continue
@@ -329,7 +347,7 @@ class EditorController(QObject):
         clip = self.clip(clip_id)
         if clip is None or self.is_locked(clip.track_id):
             return
-        targets = self.editable([clip] + self.seq.linked(clip))
+        targets = self.editable(self.with_linked([clip]))
         if not any(c.start + 1e-3 < t < c.end - 1e-3 for c in targets):
             return
         self._push("Razor cut")
@@ -349,7 +367,8 @@ class EditorController(QObject):
         return len(created)
 
     def delete_clips(self, clip_ids: Iterable[str], ripple: bool = False) -> None:
-        clips = self.editable(self.with_linked(c for c in map(self.clip, clip_ids) if c))
+        """Delete exactly these clips (callers decide whether linked partners are included)."""
+        clips = self.editable(c for c in map(self.clip, clip_ids) if c)
         if not clips:
             return
         self._push("Ripple delete" if ripple else "Delete clips")
@@ -387,12 +406,22 @@ class EditorController(QObject):
         clips = self.editable(self.selected_clips())
         if not clips:
             return
+        if link and len(clips) < 2:
+            self.message.emit("Select a video clip and an audio clip to link them")
+            return
         self._push("Link clips" if link else "Unlink clips")
         from ..model.project import new_id
-        lid = new_id() if link and len(clips) > 1 else None
+        lid = new_id() if link else None
         for c in clips:
             c.link_id = lid
         self._done()
+        self.message.emit("Linked: audio and video now move together" if link else
+                          "Unlinked: audio and video can now be moved, trimmed and deleted separately")
+
+    def toggle_link_selected(self) -> None:
+        """Ctrl+L: unlink if anything selected is linked, otherwise link the selection."""
+        clips = self.selected_clips()
+        self.link_selected(not any(c.link_id for c in clips))
 
     def update_clip(self, clip_id: str, fn: Callable[[Clip], None], label: str = "Change clip",
                     merge_key: Optional[str] = None, linked: bool = False) -> None:

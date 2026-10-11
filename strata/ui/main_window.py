@@ -51,6 +51,9 @@ SHORTCUTS_HELP = """
 <tr><td><b>Shift+Delete</b></td><td>Ripple delete selected clips</td></tr>
 <tr><td><b>Ctrl+K</b></td><td>Cut at playhead</td></tr>
 <tr><td><b>Ctrl+J</b></td><td>Join selected clips (close gaps)</td></tr>
+<tr><td><b>Ctrl+L</b></td><td>Link / unlink the selected audio and video</td></tr>
+<tr><td><b>Ctrl+Shift+L</b></td><td>Toggle linked selection</td></tr>
+<tr><td><b>Alt+click</b></td><td>Select only the audio or only the video part of a linked clip</td></tr>
 <tr><td><b>Ctrl+Z / Ctrl+Shift+Z</b></td><td>Undo / redo</td></tr>
 <tr><td><b>Ctrl+A / Ctrl+Shift+A</b></td><td>Select all / deselect</td></tr>
 <tr><td><b>S</b></td><td>Toggle snapping</td></tr>
@@ -256,8 +259,12 @@ class MainWindow(QMainWindow):
 
         self.a_cut = A("Cut at Playhead", lambda: c.cut_at(c.playhead) or c.message.emit("No clip under the playhead"), "Ctrl+K", "razor")
         self.a_join = A("Join Selected Clips (close gaps)", c.join_selected, "Ctrl+J")
-        self.a_link = A("Link Selected", lambda: c.link_selected(True))
-        self.a_unlink = A("Unlink Selected", lambda: c.link_selected(False))
+        self.a_link = A("Link / Unlink Audio and Video", c.toggle_link_selected, "Ctrl+L", "link")
+        self.a_unlink = A("Unlink Selected", lambda: c.link_selected(False), None, "unlink")
+        self.a_linked_sel = A("Linked Selection", c.set_linked_selection, "Ctrl+Shift+L", "link",
+                              checkable=True)
+        self.a_linked_sel.setChecked(c.linked_selection)
+        c.linked_selection_changed.connect(self.a_linked_sel.setChecked)
         self.a_text = A("Add Text at Playhead", lambda: c.add_text(None, c.playhead), "Ctrl+T", "text")
 
         self.a_tool_select = A("Selection Tool", lambda: c.set_tool("select"), "V", "select")
@@ -304,7 +311,8 @@ class MainWindow(QMainWindow):
                   self.a_select_all, self.a_deselect):
             m.addSeparator() if a is None else m.addAction(a)
         m = mb.addMenu("&Clip")
-        for a in (self.a_cut, self.a_join, None, self.a_link, self.a_unlink, None, self.a_text):
+        for a in (self.a_cut, self.a_join, None, self.a_link, self.a_unlink, self.a_linked_sel, None,
+                  self.a_text):
             m.addSeparator() if a is None else m.addAction(a)
         m = mb.addMenu("&Sequence")
         for a in (self.a_seq_settings, None, self.a_add_v, self.a_add_a, None, self.a_zoom_in,
@@ -489,8 +497,8 @@ class MainWindow(QMainWindow):
         if not self.maybe_save():
             e.ignore()
             return
-        self.program.player.pause()
-        self.source.player.pause()
+        self.program.shutdown()
+        self.source.shutdown()
         self.audio.stop()
         self.settings.setValue("geometry", self.saveGeometry())
         e.accept()

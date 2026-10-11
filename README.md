@@ -52,6 +52,11 @@ rendering, export and headless UI interactions.
    move them between tracks and in time, trim by dragging clip edges, cut with the razor
    (C) or at the playhead (Ctrl+K), ripple delete (Shift+Delete or the ripple tool), join
    clips to close gaps (Ctrl+J). Snapping (S) snaps to clip edges and the playhead.
+   **Separating audio and video:** a video's picture and sound are linked and move together.
+   Alt+click selects just one part (then Delete removes only that part), right-click →
+   *Unlink audio and video* (Ctrl+L) splits them permanently, and the chain button in the
+   timeline toolbar turns linked selection off entirely. Ctrl+L on a selected video + audio
+   clip links them again.
 4. **Tracks**: every track header has visibility/mute, lock and solo toggles, a **+** button
    to add a track (video tracks stack on top, audio tracks go below) and a **×** button to
    remove an empty track. Upper video tracks are drawn over lower ones; all audio tracks
@@ -81,6 +86,8 @@ default arrangement. *Help → Keyboard Shortcuts* (F1) lists every shortcut.
 | ← / → , Home / End | Step one frame, go to start / end |
 | Delete / Shift+Delete | Remove clip / ripple delete |
 | Ctrl+K | Cut at playhead |
+| Alt+click | Select only the audio or only the video of a linked clip |
+| Ctrl+L / Ctrl+Shift+L | Link/unlink audio and video / toggle linked selection |
 | Ctrl+Z / Ctrl+Shift+Z | Undo / redo |
 | + / − / \\ | Timeline zoom in / out / fit |
 | S | Toggle snapping |
@@ -98,4 +105,6 @@ tests/        pytest suite
 ```
 
 Preview and export share one renderer, so the exported video matches what the Program
-monitor shows.
+monitor shows. Monitor frames are rendered on a background thread: while you scrub, the
+nearest keyframe is shown immediately and replaced with the exact frame as soon as you
+pause, so the timeline stays responsive even with long-GOP or 4K footage.

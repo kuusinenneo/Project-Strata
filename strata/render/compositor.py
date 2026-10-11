@@ -122,7 +122,8 @@ class Compositor:
             self._scaled.popitem(last=False)
         return arr
 
-    def _source_array(self, clip: Clip, t: float, w: int, h: int) -> Optional[np.ndarray]:
+    def _source_array(self, clip: Clip, t: float, w: int, h: int,
+                      fast: bool = False) -> Optional[np.ndarray]:
         media = self.project.media_for(clip)
         if media is None:
             return None
@@ -134,11 +135,11 @@ class Compositor:
         src_t = clip.source_time(t)
         if media.duration > 0:
             src_t = min(max(0.0, src_t), max(0.0, media.duration - 1e-3))
-        return dec.rgb_at(src_t, w, h)
+        return dec.rgb_at(src_t, w, h, accurate=not fast)
 
     # ----------------------------------------------------------------- drawing
     def _draw_clip(self, p: QPainter, clip: Clip, t: float, alpha: float,
-                   out_w: int, out_h: int) -> None:
+                   out_w: int, out_h: int, fast: bool = False) -> None:
         alpha *= max(0.0, min(1.0, clip.effects.opacity / 100.0)) * _clip_fade(clip, t)
         if alpha <= 1e-3:
             return
@@ -164,7 +165,7 @@ class Compositor:
         # decode no larger than the source, no larger than drawn
         dw = max(2, min(media.width, int(round(fw))))
         dh = max(2, min(media.height, int(round(fh))))
-        arr = self._source_array(clip, t, dw, dh)
+        arr = self._source_array(clip, t, dw, dh, fast)
         if arr is None:
             self._draw_offline(p, target, media.name)
             return
@@ -190,8 +191,12 @@ class Compositor:
         p.drawText(rect, Qt.AlignCenter, f"Media offline\n{name}")
         p.restore()
 
-    def render(self, t: float, out_w: int, out_h: int, image: Optional[QImage] = None) -> QImage:
-        """Render the sequence at time ``t`` into an out_w x out_h RGB32 image."""
+    def render(self, t: float, out_w: int, out_h: int, image: Optional[QImage] = None,
+               fast: bool = False) -> QImage:
+        """Render the sequence at time ``t`` into an out_w x out_h RGB32 image.
+
+        ``fast`` trades frame accuracy for speed while scrubbing.
+        """
         if image is None or image.width() != out_w or image.height() != out_h:
             image = QImage(out_w, out_h, QImage.Format_RGB32)
         image.fill(QColor(0, 0, 0))
@@ -202,7 +207,7 @@ class Compositor:
         try:
             for track in visible_video_tracks(seq):
                 for clip, alpha in track_layers(seq, track.id, t):
-                    self._draw_clip(p, clip, t, alpha, out_w, out_h)
+                    self._draw_clip(p, clip, t, alpha, out_w, out_h, fast)
         finally:
             p.end()
         return image

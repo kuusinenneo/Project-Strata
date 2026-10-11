@@ -301,6 +301,21 @@ def join_clips(seq: Sequence, clip_ids: Iterable[str]) -> int:
     return moves
 
 
+# --------------------------------------------------------------------------- linking
+def prune_links(seq: Sequence) -> int:
+    """Clear link ids that no longer join two or more clips. Returns how many were cleared."""
+    groups: dict[str, list[Clip]] = {}
+    for c in seq.clips.values():
+        if c.link_id:
+            groups.setdefault(c.link_id, []).append(c)
+    cleared = 0
+    for members in groups.values():
+        if len(members) < 2:
+            members[0].link_id = None
+            cleared += 1
+    return cleared
+
+
 # --------------------------------------------------------------------------- snapping
 def snap_points(seq: Sequence, exclude: Iterable[str] = (),
                 playhead: Optional[float] = None) -> list[float]:

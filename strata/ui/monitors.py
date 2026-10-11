@@ -1,6 +1,7 @@
 """Source and Program monitors."""
 from __future__ import annotations
 
+import time
 from typing import Optional
 
 import numpy as np
@@ -10,11 +11,12 @@ from PySide6.QtWidgets import (QHBoxLayout, QLabel, QSizePolicy, QToolButton, QV
                                QWidget)
 
 from ..media.decoder import VideoDecoder, load_image
-from ..model.project import MediaItem
+from ..model.project import MediaItem, Project
 from ..render.compositor import Compositor
 from ..render.mixer import media_mix
 from . import theme
 from .icons import icon
+from .frame_renderer import FrameRenderer, RenderJob
 from .mime import MEDIA_MIME, encode_ids
 from .playback import AudioOutput, Player, timecode
 
@@ -194,6 +196,10 @@ class MonitorPanel(QWidget):
         lay.addLayout(transport)
 
         self._render_pending = False
+        self._last_request = 0.0
+        self._shown_request = 0
+        self.renderer = FrameRenderer(self)
+        self.renderer.frame_ready.connect(self._frame_ready)
         self.setFocusPolicy(Qt.ClickFocus)
 
     # -- to override
@@ -206,7 +212,8 @@ class MonitorPanel(QWidget):
     def mix(self, t0: float, n: int) -> np.ndarray:
         return np.zeros((n, 2), np.float32)
 
-    def render_frame(self, t: float) -> Optional[QImage]:
+    def make_job(self, t: float, w: int, h: int) -> Optional[RenderJob]:
+        """Return a callable(fast) -> QImage that renders time ``t`` off the UI thread."""
         return None
 
     def marks(self) -> tuple[Optional[float], Optional[float]]:
@@ -220,6 +227,11 @@ class MonitorPanel(QWidget):
         self.activated.emit(self)
         super().mousePressEvent(e)
 
+    def render_frame(self, t: float, fast: bool = False) -> Optional[QImage]:
+        """Render synchronously (used by tests and tools); normal display is async."""
+        job = self.make_job(t, *self.view.render_size())
+        return self.renderer.run_now(job, fast) if job is not None else None
+
     def request_render(self) -> None:
         if not self._render_pending:
             self._render_pending = True
@@ -227,7 +239,26 @@ class MonitorPanel(QWidget):
 
     def _do_render(self) -> None:
         self._render_pending = False
-        self.view.set_image(self.render_frame(self.player.position))
+        job = self.make_job(self.player.position, *self.view.render_size())
+        if job is None:
+            self._shown_request = self.renderer.request(lambda fast: None)
+            self.view.set_image(None)
+            return
+        now = time.monotonic()
+        # Requests arriving in quick succession mean the user is scrubbing: show
+        # approximate frames immediately and let the renderer refine afterwards.
+        fast = not self.player.playing and now - self._last_request < 0.08
+        self._last_request = now
+        self.renderer.request(job, fast)
+
+    def _frame_ready(self, request_id: int, img: QImage) -> None:
+        if request_id >= self._shown_request:
+            self._shown_request = request_id
+            self.view.set_image(img)
+
+    def shutdown(self) -> None:
+        self.player.pause()
+        self.renderer.stop()
 
     def refresh_labels(self) -> None:
         fps = self.fps()
@@ -243,10 +274,7 @@ class MonitorPanel(QWidget):
 
     def _on_position(self, t: float) -> None:
         self.refresh_labels()
-        if self.player.playing:
-            self._do_render()  # render synchronously during playback for steady frames
-        else:
-            self.request_render()
+        self.request_render()
 
     def _on_playing(self, playing: bool) -> None:
         self.play_btn.setIcon(icon("pause" if playing else "play"))
@@ -317,11 +345,16 @@ class SourceMonitor(MonitorPanel):
         controller.audio_loaded.connect(lambda mid: self.request_render()
                                         if self.media and mid == self.media.id else None)
 
+    def _close_decoder(self) -> None:
+        if self._decoder is not None:
+            with self.renderer.lock:  # never close while the render thread uses it
+                self._decoder.close()
+        self._decoder = None
+
     def load_media(self, media: MediaItem) -> None:
         self.player.pause()
-        if self._decoder is not None:
-            self._decoder.close()
-        self._decoder, self._still = None, None
+        self._close_decoder()
+        self._still = None
         self.media = media
         self.title_label.setText(f"Source: {media.name}")
         if media.kind == "video":
@@ -349,9 +382,8 @@ class SourceMonitor(MonitorPanel):
     def _media_changed(self) -> None:
         if self.media is not None and self.media.id not in self.controller.project.media:
             self.media = None
-            if self._decoder:
-                self._decoder.close()
-            self._decoder, self._still = None, None
+            self._close_decoder()
+            self._still = None
             self.title_label.setText("Source: (no clip)")
             self.view.set_image(None)
         elif self.media is not None:
@@ -385,29 +417,33 @@ class SourceMonitor(MonitorPanel):
             return np.zeros((n, 2), np.float32)
         return media_mix(data, t0, n)
 
-    def render_frame(self, t: float) -> Optional[QImage]:
-        if self.media is None:
+    def make_job(self, t: float, w: int, h: int) -> Optional[RenderJob]:
+        media, dec, still = self.media, self._decoder, self._still
+        if media is None:
             return None
-        if self._still is not None:
-            return self._still
-        if self._decoder is not None:
-            w, h = self.view.render_size()
-            arr = self._decoder.rgb_at(t, w, h)
-            if arr is None:
-                return None
-            arr = np.ascontiguousarray(arr)
-            return QImage(arr.data, arr.shape[1], arr.shape[0], arr.strides[0],
-                          QImage.Format_RGB888).copy()
-        if self.media.kind == "audio":
-            return self._waveform_image(t)
+        if still is not None:
+            return lambda fast: still
+        if dec is not None:
+            def job(fast: bool) -> Optional[QImage]:
+                if dec is not self._decoder:  # media changed while queued
+                    return None
+                arr = dec.rgb_at(t, w, h, accurate=not fast)
+                if arr is None:
+                    return None
+                arr = np.ascontiguousarray(arr)
+                return QImage(arr.data, arr.shape[1], arr.shape[0], arr.strides[0],
+                              QImage.Format_RGB888).copy()
+            return job
+        if media.kind == "audio":
+            duration = self.duration()
+            return lambda fast: self._waveform_image(media, t, w, h, duration)
         return None
 
-    def _waveform_image(self, t: float) -> QImage:
-        w, h = self.view.render_size()
+    def _waveform_image(self, media: MediaItem, t: float, w: int, h: int, duration: float) -> QImage:
         img = QImage(w, h, QImage.Format_RGB32)
         img.fill(QColor(12, 14, 18))
         p = QPainter(img)
-        data = self.controller.audio_store.get(self.media.id)
+        data = self.controller.audio_store.get(media.id)
         if data is not None and len(data.peaks):
             peaks = data.peaks
             cols = np.linspace(0, len(peaks), w + 1).astype(int)
@@ -416,7 +452,7 @@ class SourceMonitor(MonitorPanel):
                 a, b = cols[x], max(cols[x] + 1, cols[x + 1])
                 v = float(peaks[a:b].max()) if a < len(peaks) else 0.0
                 p.drawLine(x, int(h / 2 - v * h * 0.45), x, int(h / 2 + v * h * 0.45))
-            x = int(t / max(1e-6, self.duration()) * w)
+            x = int(t / max(1e-6, duration) * w)
             p.setPen(QPen(theme.PLAYHEAD, 2))
             p.drawLine(x, 0, x, h)
         else:
@@ -453,7 +489,7 @@ class ProgramMonitor(MonitorPanel):
         self.controller = controller
         self.mixer = mixer
         self.compositor = Compositor(controller.project)
-        self._image: Optional[QImage] = None
+        self._snapshot: Optional[Project] = None
         self.view.placeholder = ""
         controller.project_changed.connect(self._project_changed)
         controller.project_replaced.connect(self._project_replaced)
@@ -463,14 +499,13 @@ class ProgramMonitor(MonitorPanel):
 
     def _project_replaced(self) -> None:
         self.player.pause()
-        self.compositor.project = self.controller.project
-        self.mixer.project = self.controller.project
-        self.compositor.reset()
+        with self.renderer.lock:
+            self.compositor.reset()
         self._project_changed()
 
     def _project_changed(self) -> None:
-        # undo/redo replace the sequence object; the compositor reads through project
-        self.compositor.project = self.controller.project
+        # The render thread works on an immutable copy, rebuilt lazily after edits.
+        self._snapshot = None
         self.mixer.project = self.controller.project
         seq = self.controller.project.sequence
         self.view.aspect = seq.width / max(1, seq.height)
@@ -497,11 +532,16 @@ class ProgramMonitor(MonitorPanel):
     def mix(self, t0: float, n: int) -> np.ndarray:
         return self.mixer.mix(t0, n)
 
-    def render_frame(self, t: float) -> Optional[QImage]:
-        w, h = self.view.render_size()
-        try:
-            self._image = self.compositor.render(t, w, h, self._image)
-        except Exception as exc:  # keep the UI alive if a file misbehaves
-            self.controller.message.emit(f"Render error: {exc}")
-            return None
-        return self._image
+    def snapshot(self) -> Project:
+        if self._snapshot is None:
+            self._snapshot = Project.from_dict(self.controller.project.to_dict())
+        return self._snapshot
+
+    def make_job(self, t: float, w: int, h: int) -> Optional[RenderJob]:
+        snap = self.snapshot()
+        comp = self.compositor
+
+        def job(fast: bool) -> QImage:
+            comp.project = snap
+            return comp.render(t, w, h, None, fast)
+        return job

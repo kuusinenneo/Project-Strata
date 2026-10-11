@@ -13,6 +13,8 @@ import av
 import numpy as np
 
 FORWARD_DECODE_LIMIT = 2.5  # seconds; beyond this a seek is cheaper than decoding forward
+FAST_FORWARD_LIMIT = 0.5  # scrubbing: seek sooner
+FAST_FRAME_BUDGET = 4  # scrubbing: decode at most this many frames per request
 
 
 class VideoDecoder:
@@ -74,20 +76,30 @@ class VideoDecoder:
             return None
 
     # -- public
-    def frame_at(self, t: float):
-        """Return the av.VideoFrame shown at source time ``t`` (None if undecodable)."""
+    def frame_at(self, t: float, accurate: bool = True):
+        """Return the av.VideoFrame shown at source time ``t`` (None if undecodable).
+
+        With ``accurate=False`` (used while scrubbing) only a few frames are decoded
+        after a seek, so the result may be the nearest keyframe before ``t``.
+        """
         t = max(0.0, t)
         tol = 0.5 / self.fps
+        limit = FORWARD_DECODE_LIMIT if accurate else FAST_FORWARD_LIMIT
         if self._cur is not None and self._cur_t - tol <= t:
             if self._pending is not None and self._pending_t > t + tol:
                 return self._cur
             if self._eof:
                 return self._cur
-            if t - self._cur_t > FORWARD_DECODE_LIMIT:
+            if t - self._cur_t > limit:
                 self._seek(t)
         else:
             self._seek(t)
+        budget = None if accurate else FAST_FRAME_BUDGET
         while True:
+            if budget is not None and self._cur is not None:
+                if budget <= 0:
+                    return self._cur
+                budget -= 1
             if self._pending is None:
                 f = self._next_frame()
                 if f is None:
@@ -100,9 +112,9 @@ class VideoDecoder:
                 return self._cur
 
     def rgb_at(self, t: float, width: Optional[int] = None,
-               height: Optional[int] = None) -> Optional[np.ndarray]:
+               height: Optional[int] = None, accurate: bool = True) -> Optional[np.ndarray]:
         """HxWx3 uint8 RGB array of the frame at ``t``, scaled to width x height."""
-        frame = self.frame_at(t)
+        frame = self.frame_at(t, accurate)
         if frame is None:
             return None
         w = int(width or frame.width)

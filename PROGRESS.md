@@ -19,6 +19,12 @@
   - Keyboard shortcuts per spec (+ extras: B, T, Ctrl+K, Ctrl+J, arrows, Home/End)
   - Headless UI tests (layout, editing, mouse tools, drag & drop, shortcuts, save/load, export dialog)
 - End-to-end check: app launched on Windows with real media, real audio playback and meters verified
+- Separate audio/video of linked clips: Alt+click single-part selection, Unlink/Link (Ctrl+L),
+  linked-selection toggle (timeline toolbar, Ctrl+Shift+L), "Delete audio/video only" context
+  action, Alt+trim of one part, dangling links cleaned up automatically
+- Scrubbing performance: monitor frames rendered on a background thread (newest request wins),
+  fast keyframe frames while scrubbing with automatic exact refinement, timeline repaints only
+  the playhead strips (UI time per scrub event 44 ms → ~8 ms median)
 
 ## In progress
 - (nothing)
