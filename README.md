@@ -35,8 +35,8 @@ python main.py path\to\project.strata.json   # open a project directly
 ## Build a Windows app (.exe)
 
 ```powershell
-.uild.bat           # build + self-test  ->  dist\Strata\Strata.exe
-.uild.bat notest    # build only
+.\build.bat           # build + self-test  ->  dist\Strata\Strata.exe
+.\build.bat notest    # build only
 ```
 
 `build.bat` creates the venv if needed, installs `requirements-build.txt` (adds
