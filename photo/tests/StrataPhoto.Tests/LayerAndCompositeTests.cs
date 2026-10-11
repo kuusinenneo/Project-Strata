@@ -212,6 +212,20 @@ public class LayerAndCompositeTests
     }
 
     [Fact]
+    public void TextFallsBackForMissingGlyphs()
+    {
+        // U+2713 CHECK MARK is not in Arial; it must come from a fallback font, not a missing-glyph box.
+        var props = new TextProps("✓", "Arial", 60, SKColors.Black, TextAlign.Left, false, false, 0, 0);
+        using var primary = SKTypeface.FromFamilyName("Arial");
+        Assert.False(primary.ContainsGlyph(0x2713));
+        var fallback = SKFontManager.Default.MatchCharacter("Arial", SKFontStyle.Normal, null, 0x2713);
+        Assert.NotNull(fallback);
+        using var bmp = TextRenderer.Render(props, 100, 100);
+        Assert.False(Bitmaps.ContentBounds(bmp).IsEmpty);
+        Assert.True(TextRenderer.Measure(props).Width > 10);
+    }
+
+    [Fact]
     public void TextLayerIsEditableAfterCreation()
     {
         var doc = Blank(200, 100);

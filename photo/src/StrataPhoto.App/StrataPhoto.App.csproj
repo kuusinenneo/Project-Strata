@@ -34,4 +34,9 @@
     <None Include="..\..\..\shared\icons\app\strata-photo.png" Link="shared\icons\app\strata-photo.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <None Include="..\..\..\shared\icons\app\strata-photo.ico" Link="shared\icons\app\strata-photo.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <!-- Window icon, embedded from the shared app logo. -->
+  <ItemGroup>
+    <AvaloniaResource Include="..\..\..\shared\icons\app\strata-photo.ico" Link="Assets\strata-photo.ico" />
+  </ItemGroup>
 </Project>

@@ -1,0 +1,27 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:dock="using:Dock.Avalonia.Themes.Fluent"
+             xmlns:vm="using:StrataPhoto.App.ViewModels"
+             xmlns:panels="using:StrataPhoto.App.ViewModels.Panels"
+             xmlns:views="using:StrataPhoto.App.Views"
+             xmlns:pviews="using:StrataPhoto.App.Views.Panels"
+             x:Class="StrataPhoto.App.App"
+             Name="Strata Photo"
+             RequestedThemeVariant="Dark">
+
+  <Application.DataTemplates>
+    <DataTemplate DataType="vm:DocumentViewModel"><views:DocumentView/></DataTemplate>
+    <DataTemplate DataType="panels:LayersPanelViewModel"><pviews:LayersPanel/></DataTemplate>
+    <DataTemplate DataType="panels:AdjustmentsPanelViewModel"><pviews:AdjustmentsPanel/></DataTemplate>
+    <DataTemplate DataType="panels:PropertiesPanelViewModel"><pviews:PropertiesPanel/></DataTemplate>
+    <DataTemplate DataType="panels:HistoryPanelViewModel"><pviews:HistoryPanel/></DataTemplate>
+    <DataTemplate DataType="panels:ColorPanelViewModel"><pviews:ColorPanel/></DataTemplate>
+    <DataTemplate DataType="panels:SwatchesPanelViewModel"><pviews:SwatchesPanel/></DataTemplate>
+  </Application.DataTemplates>
+
+  <Application.Styles>
+    <FluentTheme />
+    <dock:DockFluentTheme />
+    <StyleInclude Source="avares://StrataPhoto/Theme/Styles.axaml" />
+  </Application.Styles>
+</Application>

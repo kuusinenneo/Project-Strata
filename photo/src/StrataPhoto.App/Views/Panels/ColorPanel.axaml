@@ -1,0 +1,39 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:panels="using:StrataPhoto.App.ViewModels.Panels"
+             xmlns:controls="using:StrataPhoto.App.Controls"
+             xmlns:theme="using:StrataPhoto.App.Theme"
+             x:Class="StrataPhoto.App.Views.Panels.ColorPanel"
+             x:DataType="panels:ColorPanelViewModel">
+  <ScrollViewer>
+    <Grid ColumnDefinitions="Auto,10,*" RowDefinitions="Auto,Auto" Margin="8">
+      <StackPanel Grid.Column="0" Spacing="6">
+        <controls:ColorPairView Name="Pair" Width="48" Height="48"
+                                ForegroundColor="{Binding Foreground}" BackgroundColor="{Binding Background}"
+                                BackgroundActive="{Binding EditingBackground}"
+                                ToolTip.Tip="Click a square to choose which colour to edit" />
+        <StackPanel Orientation="Horizontal" Spacing="2">
+          <Button Classes="icon" Width="22" Height="22" Command="{Binding SwapCommand}" ToolTip.Tip="Swap (X)" Focusable="False">
+            <theme:IconView Icon="swap" Width="13" Height="13" />
+          </Button>
+          <Button Classes="icon" Width="22" Height="22" Command="{Binding ResetColorsCommand}" ToolTip.Tip="Default colours (D)" Focusable="False">
+            <theme:IconView Icon="default-colors" Width="13" Height="13" />
+          </Button>
+        </StackPanel>
+      </StackPanel>
+      <StackPanel Grid.Column="2" Spacing="6">
+        <controls:SatValPicker Height="110" HueColor="{Binding HueColor}" Saturation="{Binding Saturation}" Brightness="{Binding Brightness}" />
+        <controls:HueSlider Height="16" Hue="{Binding Hue}" />
+      </StackPanel>
+      <StackPanel Grid.Row="1" Grid.ColumnSpan="3" Spacing="4" Margin="0,10,0,0">
+        <controls:ValueSlider Label="R" Minimum="0" Maximum="255" Value="{Binding Red}" Compact="True" />
+        <controls:ValueSlider Label="G" Minimum="0" Maximum="255" Value="{Binding Green}" Compact="True" />
+        <controls:ValueSlider Label="B" Minimum="0" Maximum="255" Value="{Binding Blue}" Compact="True" />
+        <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">
+          <TextBlock Text="#" VerticalAlignment="Center" />
+          <TextBox Width="90" Text="{Binding Hex, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" MaxLength="7" />
+        </StackPanel>
+      </StackPanel>
+    </Grid>
+  </ScrollViewer>
+</UserControl>

@@ -1,0 +1,33 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:panels="using:StrataPhoto.App.ViewModels.Panels"
+             xmlns:theme="using:StrataPhoto.App.Theme"
+             x:Class="StrataPhoto.App.Views.Panels.SwatchesPanel"
+             x:DataType="panels:SwatchesPanelViewModel">
+  <DockPanel Margin="6">
+    <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,Auto,Auto" Margin="0,6,0,0">
+      <TextBlock Text="Click: foreground · Alt+click: background · Right-click: remove" Classes="dim small" TextWrapping="Wrap" VerticalAlignment="Center" />
+      <Button Grid.Column="1" Classes="icon" Command="{Binding AddForegroundCommand}" ToolTip.Tip="Add the foreground colour" Focusable="False">
+        <theme:IconView Icon="plus" />
+      </Button>
+      <Button Grid.Column="2" Classes="icon" Command="{Binding ResetSwatchesCommand}" ToolTip.Tip="Restore default swatches" Focusable="False">
+        <theme:IconView Icon="rotate" />
+      </Button>
+    </Grid>
+    <ScrollViewer>
+      <ItemsControl Name="Grid" ItemsSource="{Binding Items}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="panels:SwatchItem">
+            <Border Width="20" Height="20" Margin="1" Background="{Binding Brush}" BorderBrush="#40000000" BorderThickness="1"
+                    ToolTip.Tip="{Binding Tooltip}" Cursor="Hand" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

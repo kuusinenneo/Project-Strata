@@ -1,0 +1,27 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:StrataPhoto.App.ViewModels"
+             xmlns:canvas="using:StrataPhoto.App.Canvas"
+             x:Class="StrataPhoto.App.Views.DocumentView"
+             x:DataType="vm:DocumentViewModel">
+  <Grid Name="Root" ColumnDefinitions="18,*" RowDefinitions="18,*">
+    <Border Grid.Row="0" Grid.Column="0" Name="Corner" Background="{DynamicResource Strata.bgPanelBrush}"
+            BorderBrush="{DynamicResource Strata.borderBrush}" BorderThickness="0,0,1,1" />
+    <canvas:RulerView Grid.Row="0" Grid.Column="1" Name="TopRuler" Orientation="Horizontal" />
+    <canvas:RulerView Grid.Row="1" Grid.Column="0" Name="LeftRuler" Orientation="Vertical" />
+    <canvas:CanvasView Grid.Row="1" Grid.Column="1" Name="Canvas" />
+
+    <!-- Floating editor while typing with the Text tool -->
+    <Canvas Grid.Row="1" Grid.Column="1" Name="Overlay" ClipToBounds="True" IsHitTestVisible="True" Background="{x:Null}">
+      <Border Name="TextEditor" IsVisible="False" Background="{DynamicResource Strata.bgPanelBrush}"
+              BorderBrush="{DynamicResource Strata.accentBrush}" BorderThickness="1" CornerRadius="4" Padding="6"
+              BoxShadow="0 4 14 0 #80000000">
+        <StackPanel Spacing="4" Width="260">
+          <TextBlock Text="Text (Ctrl+Enter or Esc to finish)" Classes="dim small" />
+          <TextBox Name="TextInput" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="54" MaxHeight="200" />
+          <Button Name="FinishText" Content="Done" HorizontalAlignment="Right" Classes="accent" />
+        </StackPanel>
+      </Border>
+    </Canvas>
+  </Grid>
+</UserControl>

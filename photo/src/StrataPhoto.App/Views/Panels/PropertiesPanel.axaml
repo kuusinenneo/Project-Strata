@@ -1,0 +1,107 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:panels="using:StrataPhoto.App.ViewModels.Panels"
+             xmlns:views="using:StrataPhoto.App.Views"
+             xmlns:controls="using:StrataPhoto.App.Controls"
+             xmlns:model="using:StrataPhoto.Core.Model"
+             x:Class="StrataPhoto.App.Views.Panels.PropertiesPanel"
+             x:DataType="panels:PropertiesPanelViewModel">
+  <ScrollViewer>
+    <StackPanel Margin="8,4,8,8" Spacing="6">
+      <TextBlock Text="Open or create an image to see its properties." Classes="dim small" IsVisible="{Binding !HasDocument}" TextWrapping="Wrap" />
+
+      <!-- document -->
+      <StackPanel IsVisible="{Binding HasDocument}" Spacing="4">
+        <TextBlock Text="Document" Classes="header" />
+        <Grid ColumnDefinitions="*,Auto,Auto">
+          <TextBlock Text="{Binding DocumentInfo}" VerticalAlignment="Center" />
+          <Button Grid.Column="1" Content="Image Size…" Command="{Binding ImageSizeCommand}" Focusable="False" Margin="0,0,4,0" />
+          <Button Grid.Column="2" Content="Canvas…" Command="{Binding CanvasSizeCommand}" Focusable="False" />
+        </Grid>
+      </StackPanel>
+
+      <!-- layer -->
+      <StackPanel IsVisible="{Binding HasLayer}" Spacing="6">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Text="Layer" Classes="header" />
+          <TextBlock Grid.Column="1" Text="{Binding LayerKind}" Classes="dim small" VerticalAlignment="Bottom" Margin="0,0,0,4" />
+        </Grid>
+        <TextBox Text="{Binding LayerName, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" Watermark="Layer name" />
+        <controls:ValueSlider Label="Opacity" Minimum="0" Maximum="100" Unit="%" Value="{Binding Opacity}" />
+        <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding BlendModeList}" SelectedItem="{Binding BlendMode}" Focusable="False">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="model:BlendMode">
+              <TextBlock Text="{Binding Converter={x:Static views:BlendModeNameConverter.Instance}}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+        <StackPanel Orientation="Horizontal" Spacing="16">
+          <CheckBox Content="Visible" IsChecked="{Binding LayerVisible}" Focusable="False" />
+          <CheckBox Content="Locked" IsChecked="{Binding LayerLocked}" Focusable="False" />
+        </StackPanel>
+      </StackPanel>
+
+      <!-- text -->
+      <StackPanel IsVisible="{Binding IsText}" Spacing="6">
+        <TextBlock Text="Type" Classes="header" />
+        <TextBox Text="{Binding TextContent, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="54" />
+        <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding FontFamilies}" SelectedItem="{Binding FontFamily}" Focusable="False">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="x:String">
+              <TextBlock Text="{Binding}" FontFamily="{Binding}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+        <Grid ColumnDefinitions="Auto,8,*,8,Auto,Auto">
+          <TextBlock Text="Size" VerticalAlignment="Center" />
+          <NumericUpDown Grid.Column="2" Minimum="1" Maximum="2000" Increment="2" FormatString="0.#" Value="{Binding FontSize}" />
+          <ToggleButton Grid.Column="4" Classes="icon" IsChecked="{Binding Bold}" Focusable="False" ToolTip.Tip="Bold">
+            <TextBlock Text="B" FontWeight="Bold" />
+          </ToggleButton>
+          <ToggleButton Grid.Column="5" Classes="icon" IsChecked="{Binding Italic}" Focusable="False" ToolTip.Tip="Italic">
+            <TextBlock Text="I" FontStyle="Italic" FontFamily="Georgia,serif" />
+          </ToggleButton>
+        </Grid>
+        <StackPanel Orientation="Horizontal" Spacing="2">
+          <TextBlock Text="Align" VerticalAlignment="Center" Margin="0,0,8,0" />
+          <ToggleButton Classes="icon" Width="NaN" Padding="8,2" Focusable="False"
+                        IsChecked="{Binding Align, Converter={x:Static views:EnumEqualsConverter.Instance}, ConverterParameter=Left}">
+            <TextBlock Text="Left" FontSize="11" />
+          </ToggleButton>
+          <ToggleButton Classes="icon" Width="NaN" Padding="8,2" Focusable="False"
+                        IsChecked="{Binding Align, Converter={x:Static views:EnumEqualsConverter.Instance}, ConverterParameter=Center}">
+            <TextBlock Text="Center" FontSize="11" />
+          </ToggleButton>
+          <ToggleButton Classes="icon" Width="NaN" Padding="8,2" Focusable="False"
+                        IsChecked="{Binding Align, Converter={x:Static views:EnumEqualsConverter.Instance}, ConverterParameter=Right}">
+            <TextBlock Text="Right" FontSize="11" />
+          </ToggleButton>
+        </StackPanel>
+        <Grid ColumnDefinitions="Auto,8,Auto,*,Auto">
+          <TextBlock Text="Colour" VerticalAlignment="Center" />
+          <Border Grid.Column="2" Width="22" Height="22" BorderBrush="{DynamicResource Strata.borderLightBrush}" BorderThickness="1"
+                  Background="{Binding TextColor, Converter={x:Static views:ColorBrushConverter.Instance}}" />
+          <Button Grid.Column="4" Content="Use foreground colour" Command="{Binding UseForegroundForTextCommand}" Focusable="False" />
+        </Grid>
+        <Button Content="Rasterize Type" Command="{Binding RasterizeCommand}" Focusable="False" HorizontalAlignment="Left" />
+      </StackPanel>
+
+      <!-- mask -->
+      <StackPanel IsVisible="{Binding HasLayer}" Spacing="6">
+        <TextBlock Text="Layer Mask" Classes="header" />
+        <Button Content="Add Mask" Command="{Binding AddMaskCommand}" Focusable="False" HorizontalAlignment="Left" IsVisible="{Binding !HasMask}" />
+        <StackPanel IsVisible="{Binding HasMask}" Spacing="6">
+          <StackPanel Orientation="Horizontal" Spacing="16">
+            <CheckBox Content="Enabled" IsChecked="{Binding MaskEnabled}" Focusable="False" />
+            <CheckBox Content="Paint on mask" IsChecked="{Binding EditingMask}" Focusable="False" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <Button Content="Apply" Command="{Binding ApplyMaskCommand}" Focusable="False" />
+            <Button Content="Delete" Command="{Binding DeleteMaskCommand}" Focusable="False" />
+          </StackPanel>
+          <TextBlock Text="On the mask, black hides and white reveals the layer." Classes="dim small" TextWrapping="Wrap" />
+        </StackPanel>
+      </StackPanel>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

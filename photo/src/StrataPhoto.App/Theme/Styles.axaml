@@ -1,0 +1,172 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:theme="using:StrataPhoto.App.Theme">
+
+  <!-- Compact, dark, Strata-styled controls (colours come from shared/theme.json via SharedTheme). -->
+
+  <Style Selector="Window">
+    <Setter Property="FontFamily" Value="{DynamicResource Strata.FontFamily}" />
+    <Setter Property="FontSize" Value="{DynamicResource Strata.FontSizeNormal}" />
+    <Setter Property="Background" Value="{DynamicResource Strata.bgBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource Strata.textBrush}" />
+  </Style>
+
+  <Style Selector="TextBlock.dim">
+    <Setter Property="Foreground" Value="{DynamicResource Strata.textDimBrush}" />
+  </Style>
+  <Style Selector="TextBlock.header">
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{DynamicResource Strata.accentSoftBrush}" />
+    <Setter Property="Margin" Value="0,8,0,4" />
+  </Style>
+  <Style Selector="TextBlock.small">
+    <Setter Property="FontSize" Value="{DynamicResource Strata.FontSizeSmall}" />
+  </Style>
+
+  <!-- Menus -->
+  <Style Selector="Menu">
+    <Setter Property="Background" Value="{DynamicResource Strata.bgBrush}" />
+    <Setter Property="Height" Value="26" />
+  </Style>
+  <Style Selector="Menu > MenuItem">
+    <Setter Property="Padding" Value="9,3" />
+    <Setter Property="FontSize" Value="12" />
+  </Style>
+  <Style Selector="MenuItem">
+    <Setter Property="FontSize" Value="12" />
+  </Style>
+  <Style Selector="MenuItem /template/ Border#PART_LayoutRoot">
+    <Setter Property="MinHeight" Value="24" />
+  </Style>
+
+  <!-- Buttons -->
+  <Style Selector="Button">
+    <Setter Property="Padding" Value="10,4" />
+    <Setter Property="MinHeight" Value="24" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="CornerRadius" Value="{DynamicResource Strata.CornerRadius}" />
+  </Style>
+  <Style Selector="Button.accent">
+    <Setter Property="Background" Value="{DynamicResource Strata.accentBrush}" />
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+  <Style Selector="Button.accent:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Strata.accentSoftBrush}" />
+    <Setter Property="Foreground" Value="Black" />
+  </Style>
+
+  <!-- Icon buttons (panel toolbars, options bar) -->
+  <Style Selector="Button.icon, ToggleButton.icon">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="Padding" Value="3" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Width" Value="26" />
+    <Setter Property="Height" Value="26" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.icon:pointerover /template/ ContentPresenter, ToggleButton.icon:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Strata.bgLightBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Strata.borderLightBrush}" />
+  </Style>
+  <Style Selector="ToggleButton.icon:checked /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Strata.selectionBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Strata.accentBrush}" />
+  </Style>
+  <Style Selector="Button.icon theme|IconView, ToggleButton.icon theme|IconView">
+    <Setter Property="Width" Value="16" />
+    <Setter Property="Height" Value="16" />
+    <Setter Property="Foreground" Value="{DynamicResource Strata.textBrush}" />
+  </Style>
+
+  <!-- Tools strip -->
+  <Style Selector="RadioButton.tool">
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="bd" Width="32" Height="30" CornerRadius="3" Margin="2,1"
+                Background="Transparent" BorderBrush="Transparent" BorderThickness="1">
+          <ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="RadioButton.tool:pointerover /template/ Border#bd">
+    <Setter Property="Background" Value="{DynamicResource Strata.bgLightBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Strata.borderLightBrush}" />
+  </Style>
+  <Style Selector="RadioButton.tool:checked /template/ Border#bd">
+    <Setter Property="Background" Value="{DynamicResource Strata.selectionBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Strata.accentBrush}" />
+  </Style>
+  <Style Selector="RadioButton.tool theme|IconView">
+    <Setter Property="Width" Value="18" />
+    <Setter Property="Height" Value="18" />
+    <Setter Property="Foreground" Value="{DynamicResource Strata.textBrush}" />
+  </Style>
+  <Style Selector="RadioButton.tool:checked theme|IconView">
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+
+  <!-- Inputs -->
+  <Style Selector="TextBox, NumericUpDown, ComboBox">
+    <Setter Property="MinHeight" Value="24" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="CornerRadius" Value="{DynamicResource Strata.CornerRadius}" />
+  </Style>
+  <Style Selector="TextBox">
+    <Setter Property="Padding" Value="6,3" />
+  </Style>
+  <Style Selector="NumericUpDown /template/ TextBox">
+    <Setter Property="Padding" Value="5,2" />
+    <Setter Property="MinHeight" Value="22" />
+  </Style>
+  <Style Selector="ComboBox">
+    <Setter Property="Padding" Value="8,2" />
+  </Style>
+  <Style Selector="CheckBox">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="MinHeight" Value="24" />
+  </Style>
+  <Style Selector="Slider">
+    <Setter Property="MinHeight" Value="20" />
+  </Style>
+  <Style Selector="Slider:horizontal /template/ Track">
+    <Setter Property="Height" Value="20" />
+  </Style>
+  <Style Selector="Slider /template/ Thumb">
+    <Setter Property="Width" Value="12" />
+    <Setter Property="Height" Value="12" />
+  </Style>
+
+  <!-- Lists (layers, history) -->
+  <Style Selector="ListBox">
+    <Setter Property="Background" Value="{DynamicResource Strata.bgInputBrush}" />
+  </Style>
+  <Style Selector="ListBoxItem">
+    <Setter Property="Padding" Value="4,2" />
+    <Setter Property="MinHeight" Value="0" />
+  </Style>
+  <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Strata.selectionBrush}" />
+  </Style>
+  <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Strata.bgLightBrush}" />
+  </Style>
+  <Style Selector="ListBoxItem:selected:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Strata.selectionBrush}" />
+  </Style>
+
+  <!-- Bars -->
+  <Style Selector="Border.bar">
+    <Setter Property="Background" Value="{DynamicResource Strata.bgPanelBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Strata.borderBrush}" />
+  </Style>
+  <Style Selector="Separator.vertical">
+    <Setter Property="Width" Value="1" />
+    <Setter Property="Height" Value="20" />
+    <Setter Property="Margin" Value="8,0" />
+    <Setter Property="Background" Value="{DynamicResource Strata.borderBrush}" />
+  </Style>
+</Styles>

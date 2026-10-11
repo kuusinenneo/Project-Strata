@@ -1,0 +1,107 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:panels="using:StrataPhoto.App.ViewModels.Panels"
+             xmlns:views="using:StrataPhoto.App.Views"
+             xmlns:theme="using:StrataPhoto.App.Theme"
+             xmlns:model="using:StrataPhoto.Core.Model"
+             x:Class="StrataPhoto.App.Views.Panels.LayersPanel"
+             x:DataType="panels:LayersPanelViewModel">
+  <DockPanel Margin="4">
+    <!-- blend mode, opacity, lock -->
+    <Grid DockPanel.Dock="Top" ColumnDefinitions="*,6,Auto,Auto,6,Auto" Margin="0,0,0,4" IsEnabled="{Binding HasDocument}">
+      <ComboBox Grid.Column="0" HorizontalAlignment="Stretch" ItemsSource="{Binding BlendModeList}" SelectedItem="{Binding ActiveBlendMode}"
+                ToolTip.Tip="Blend mode" Focusable="False">
+        <ComboBox.ItemTemplate>
+          <DataTemplate x:DataType="model:BlendMode">
+            <TextBlock Text="{Binding Converter={x:Static views:BlendModeNameConverter.Instance}}" />
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+      <TextBlock Grid.Column="2" Text="Opacity" VerticalAlignment="Center" Classes="dim small" Margin="0,0,4,0" />
+      <NumericUpDown Grid.Column="3" Width="58" Minimum="0" Maximum="100" Increment="5" FormatString="0" ShowButtonSpinner="False" HorizontalContentAlignment="Right"
+                     Value="{Binding ActiveOpacity}" ToolTip.Tip="Layer opacity (%)" />
+      <ToggleButton Grid.Column="5" Classes="icon" IsChecked="{Binding ActiveLocked}" ToolTip.Tip="Lock layer" Focusable="False">
+        <theme:IconView Icon="lock" />
+      </ToggleButton>
+    </Grid>
+
+    <!-- bottom toolbar -->
+    <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource Strata.borderBrush}" BorderThickness="0,1,0,0" Padding="0,4,0,0" Margin="0,4,0,0">
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="2">
+        <Button Classes="icon" Command="{Binding MoveUpCommand}" ToolTip.Tip="Move layer up (Ctrl+])" Focusable="False">
+          <theme:IconView Icon="chevron-down" RenderTransform="rotate(180deg)" />
+        </Button>
+        <Button Classes="icon" Command="{Binding MoveDownCommand}" ToolTip.Tip="Move layer down (Ctrl+[)" Focusable="False">
+          <theme:IconView Icon="chevron-down" />
+        </Button>
+        <Button Classes="icon" Command="{Binding AddMaskCommand}" ToolTip.Tip="Add layer mask" Focusable="False">
+          <theme:IconView Icon="mask" />
+        </Button>
+        <Button Classes="icon" Command="{Binding AddGroupCommand}" ToolTip.Tip="New group" Focusable="False">
+          <theme:IconView Icon="folder" />
+        </Button>
+        <Button Classes="icon" Command="{Binding DuplicateCommand}" ToolTip.Tip="Duplicate layer (Ctrl+J)" Focusable="False">
+          <theme:IconView Icon="duplicate" />
+        </Button>
+        <Button Classes="icon" Command="{Binding AddLayerCommand}" ToolTip.Tip="New layer (Ctrl+Shift+N)" Focusable="False">
+          <theme:IconView Icon="plus" />
+        </Button>
+        <Button Classes="icon" Command="{Binding DeleteCommand}" ToolTip.Tip="Delete layer" Focusable="False">
+          <theme:IconView Icon="trash" />
+        </Button>
+      </StackPanel>
+    </Border>
+
+    <ListBox Name="List" ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}" SelectionMode="Single">
+      <ListBox.ItemTemplate>
+        <DataTemplate x:DataType="panels:LayerItemViewModel">
+          <Grid ColumnDefinitions="24,Auto,16,Auto,Auto,*,Auto" Height="42" Background="Transparent" Opacity="{Binding !Visible, Converter={x:Static views:DimConverter.Instance}}">
+            <Button Grid.Column="0" Classes="icon" Width="22" Height="22" Padding="2" Command="{Binding ToggleVisibleCommand}"
+                    ToolTip.Tip="Show / hide" Focusable="False">
+              <theme:IconView Icon="eye" Width="14" Height="14" IsVisible="{Binding Visible}" />
+            </Button>
+            <Border Grid.Column="1" Width="{Binding Indent.Left}" />
+            <Button Grid.Column="2" Classes="icon" Width="16" Height="16" Padding="0" IsVisible="{Binding IsGroup}"
+                    Command="{Binding ToggleExpandedCommand}" Focusable="False">
+              <Panel>
+                <theme:IconView Icon="chevron-down" Width="12" Height="12" IsVisible="{Binding Expanded}" />
+                <theme:IconView Icon="chevron-right" Width="12" Height="12" IsVisible="{Binding !Expanded}" />
+              </Panel>
+            </Button>
+            <!-- thumbnail (or folder/text glyph) -->
+            <Border Grid.Column="3" Name="Thumb" Width="38" Height="38" Margin="2,0" BorderThickness="1" Tag="pixels"
+                    BorderBrush="{DynamicResource Strata.borderBrush}" Background="{DynamicResource Strata.bgDarkBrush}"
+                    ToolTip.Tip="Ctrl+click: select the layer's pixels">
+              <Panel>
+                <Image Source="{Binding Thumbnail}" Stretch="Uniform" IsVisible="{Binding !IsGroup}" />
+                <theme:IconView Icon="folder" Width="20" Height="20" IsVisible="{Binding IsGroup}" Foreground="{DynamicResource Strata.textDimBrush}" />
+                <Border IsVisible="{Binding IsText}" Background="#C0202226" CornerRadius="2" Width="16" Height="16"
+                        HorizontalAlignment="Right" VerticalAlignment="Bottom">
+                  <TextBlock Text="T" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" />
+                </Border>
+              </Panel>
+            </Border>
+            <!-- mask thumbnail -->
+            <Border Grid.Column="4" Name="MaskThumb" Width="38" Height="38" Margin="2,0" BorderThickness="2" Tag="mask"
+                    IsVisible="{Binding HasMask}" Background="Black" ToolTip.Tip="Layer mask: click to paint on it">
+              <Border.BorderBrush>
+                <SolidColorBrush Color="{DynamicResource Strata.border}" />
+              </Border.BorderBrush>
+              <Panel>
+                <Image Source="{Binding MaskThumbnail}" Stretch="Uniform" Opacity="{Binding !MaskEnabled, Converter={x:Static views:DimConverter.Instance}}" />
+                <Border BorderBrush="{DynamicResource Strata.accentBrush}" BorderThickness="2" IsVisible="{Binding IsMaskTarget}" Margin="-2" />
+              </Panel>
+            </Border>
+            <StackPanel Grid.Column="5" VerticalAlignment="Center" Margin="6,0,0,0">
+              <TextBlock Text="{Binding Name}" IsVisible="{Binding !IsEditingName}" TextTrimming="CharacterEllipsis" />
+              <TextBox Name="RenameBox" Text="{Binding Name, Mode=OneWay}" IsVisible="{Binding IsEditingName}" MinHeight="22" Padding="4,1" />
+              <TextBlock Text="{Binding BlendInfo}" Classes="dim small" IsVisible="{Binding BlendInfo, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            </StackPanel>
+            <theme:IconView Grid.Column="6" Icon="lock" Width="13" Height="13" Margin="4,0" IsVisible="{Binding Locked}"
+                            Foreground="{DynamicResource Strata.textDimBrush}" />
+          </Grid>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+  </DockPanel>
+</UserControl>

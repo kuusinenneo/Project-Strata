@@ -1,0 +1,187 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:StrataPhoto.App.ViewModels"
+             xmlns:views="using:StrataPhoto.App.Views"
+             xmlns:controls="using:StrataPhoto.App.Controls"
+             xmlns:theme="using:StrataPhoto.App.Theme"
+             x:Class="StrataPhoto.App.Views.OptionsBar"
+             x:DataType="vm:MainViewModel">
+  <UserControl.Styles>
+    <Style Selector="StackPanel.group">
+      <Setter Property="Orientation" Value="Horizontal" />
+      <Setter Property="Spacing" Value="10" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="controls|ValueSlider">
+      <Setter Property="SliderWidth" Value="90" />
+      <Setter Property="Compact" Value="True" />
+    </Style>
+  </UserControl.Styles>
+
+  <StackPanel Orientation="Horizontal" Margin="8,0" Spacing="10" VerticalAlignment="Center">
+    <!-- tool name -->
+    <Border Background="{DynamicResource Strata.bgLightBrush}" CornerRadius="3" Padding="8,3" VerticalAlignment="Center">
+      <TextBlock Text="{Binding Tools.ToolName}" FontWeight="SemiBold" />
+    </Border>
+
+    <!-- brush, eraser, clone stamp -->
+    <StackPanel Classes="group" IsVisible="{Binding Tools.IsBrushTool}">
+      <controls:ValueSlider Label="Size" Minimum="1" Maximum="1000" Unit="px"
+                            Value="{Binding Tools.ActiveBrush.Size, Converter={x:Static views:FloatConverter.Instance}}" />
+      <controls:ValueSlider Label="Hardness" Minimum="0" Maximum="100" Unit="%"
+                            Value="{Binding Tools.ActiveBrush.Hardness, Converter={x:Static views:PercentConverter.Instance}}" />
+      <controls:ValueSlider Label="Opacity" Minimum="1" Maximum="100" Unit="%"
+                            Value="{Binding Tools.ActiveBrush.Opacity, Converter={x:Static views:PercentConverter.Instance}}" />
+      <controls:ValueSlider Label="Flow" Minimum="1" Maximum="100" Unit="%"
+                            Value="{Binding Tools.ActiveBrush.Flow, Converter={x:Static views:PercentConverter.Instance}}" />
+      <ToggleButton Classes="icon" Width="NaN" Padding="6,2" Focusable="False" IsChecked="{Binding Tools.ActiveBrush.PressureSize}"
+                    ToolTip.Tip="Pen pressure controls size">
+        <TextBlock Text="Pressure: size" FontSize="11" />
+      </ToggleButton>
+      <ToggleButton Classes="icon" Width="NaN" Padding="6,2" Focusable="False" IsChecked="{Binding Tools.ActiveBrush.PressureOpacity}"
+                    ToolTip.Tip="Pen pressure controls flow">
+        <TextBlock Text="Pressure: flow" FontSize="11" />
+      </ToggleButton>
+      <CheckBox Content="Aligned" IsVisible="{Binding Tools.IsCloneTool}" IsChecked="{Binding Tools.Settings.CloneAligned}" Focusable="False" />
+    </StackPanel>
+
+    <!-- selections -->
+    <StackPanel Classes="group" IsVisible="{Binding Tools.IsSelectionTool}">
+      <StackPanel Orientation="Horizontal" Spacing="2">
+        <ToggleButton Classes="icon" Focusable="False" ToolTip.Tip="New selection"
+                      IsChecked="{Binding Tools.Settings.SelectionMode, Converter={x:Static views:EnumEqualsConverter.Instance}, ConverterParameter=Replace}">
+          <theme:IconView Icon="marquee-rect" />
+        </ToggleButton>
+        <ToggleButton Classes="icon" Focusable="False" ToolTip.Tip="Add to selection (Shift)"
+                      IsChecked="{Binding Tools.Settings.SelectionMode, Converter={x:Static views:EnumEqualsConverter.Instance}, ConverterParameter=Add}">
+          <theme:IconView Icon="plus" />
+        </ToggleButton>
+        <ToggleButton Classes="icon" Focusable="False" ToolTip.Tip="Subtract from selection (Alt)"
+                      IsChecked="{Binding Tools.Settings.SelectionMode, Converter={x:Static views:EnumEqualsConverter.Instance}, ConverterParameter=Subtract}">
+          <theme:IconView Icon="minus" />
+        </ToggleButton>
+        <ToggleButton Classes="icon" Focusable="False" ToolTip.Tip="Intersect with selection (Shift+Alt)"
+                      IsChecked="{Binding Tools.Settings.SelectionMode, Converter={x:Static views:EnumEqualsConverter.Instance}, ConverterParameter=Intersect}">
+          <theme:IconView Icon="close" />
+        </ToggleButton>
+      </StackPanel>
+      <controls:ValueSlider Label="Feather" Minimum="0" Maximum="250" Unit="px" IsVisible="{Binding !Tools.IsWandTool}"
+                            Value="{Binding Tools.Settings.Feather, Converter={x:Static views:FloatConverter.Instance}}" />
+      <StackPanel Classes="group" IsVisible="{Binding Tools.IsWandTool}">
+        <controls:ValueSlider Label="Tolerance" Minimum="0" Maximum="255"
+                              Value="{Binding Tools.Settings.WandTolerance, Converter={x:Static views:FloatConverter.Instance}}" />
+        <CheckBox Content="Anti-alias" IsChecked="{Binding Tools.Settings.WandAntiAlias}" Focusable="False" />
+        <CheckBox Content="Contiguous" IsChecked="{Binding Tools.Settings.WandContiguous}" Focusable="False" />
+        <CheckBox Content="Sample all layers" IsChecked="{Binding Tools.Settings.SampleAllLayers}" Focusable="False" />
+      </StackPanel>
+      <Button Content="Select All" Command="{Binding SelectAllCommand}" Focusable="False" />
+      <Button Content="Deselect" Command="{Binding DeselectCommand}" Focusable="False" />
+      <Button Content="Invert" Command="{Binding InvertSelectionCommand}" Focusable="False" />
+    </StackPanel>
+
+    <!-- paint bucket -->
+    <StackPanel Classes="group" IsVisible="{Binding Tools.IsFillTool}">
+      <controls:ValueSlider Label="Tolerance" Minimum="0" Maximum="255"
+                            Value="{Binding Tools.Settings.FillTolerance, Converter={x:Static views:FloatConverter.Instance}}" />
+      <controls:ValueSlider Label="Opacity" Minimum="1" Maximum="100" Unit="%"
+                            Value="{Binding Tools.Settings.FillOpacity, Converter={x:Static views:PercentConverter.Instance}}" />
+      <CheckBox Content="Contiguous" IsChecked="{Binding Tools.Settings.FillContiguous}" Focusable="False" />
+      <CheckBox Content="All layers" IsChecked="{Binding Tools.Settings.SampleAllLayers}" Focusable="False" />
+    </StackPanel>
+
+    <!-- gradient -->
+    <StackPanel Classes="group" IsVisible="{Binding Tools.IsGradientTool}">
+      <StackPanel Orientation="Horizontal" Spacing="2">
+        <ToggleButton Classes="icon" Width="NaN" Padding="8,2" Focusable="False"
+                      IsChecked="{Binding Tools.Settings.GradientType, Converter={x:Static views:EnumEqualsConverter.Instance}, ConverterParameter=Linear}">
+          <TextBlock Text="Linear" FontSize="11" />
+        </ToggleButton>
+        <ToggleButton Classes="icon" Width="NaN" Padding="8,2" Focusable="False"
+                      IsChecked="{Binding Tools.Settings.GradientType, Converter={x:Static views:EnumEqualsConverter.Instance}, ConverterParameter=Radial}">
+          <TextBlock Text="Radial" FontSize="11" />
+        </ToggleButton>
+      </StackPanel>
+      <controls:ValueSlider Label="Opacity" Minimum="1" Maximum="100" Unit="%"
+                            Value="{Binding Tools.Settings.GradientOpacity, Converter={x:Static views:PercentConverter.Instance}}" />
+      <CheckBox Content="Reverse" IsChecked="{Binding Tools.Settings.GradientReverse}" Focusable="False" />
+      <CheckBox Content="Foreground to transparent" IsChecked="{Binding Tools.Settings.GradientToTransparent}" Focusable="False" />
+    </StackPanel>
+
+    <!-- shapes -->
+    <StackPanel Classes="group" IsVisible="{Binding Tools.IsShapeTool}">
+      <CheckBox Content="Fill" IsChecked="{Binding Tools.Settings.ShapeFill}" Focusable="False" />
+      <controls:ValueSlider Label="Stroke" Minimum="1" Maximum="200" Unit="px"
+                            Value="{Binding Tools.Settings.ShapeStrokeWidth, Converter={x:Static views:FloatConverter.Instance}}" />
+      <TextBlock Classes="dim small" Text="Shapes are drawn in the foreground colour on a new layer." VerticalAlignment="Center" />
+    </StackPanel>
+
+    <!-- text -->
+    <StackPanel Classes="group" IsVisible="{Binding Tools.IsTextTool}">
+      <ComboBox Width="190" ItemsSource="{Binding FontFamilies}" SelectedItem="{Binding Tools.Settings.FontFamily}" Focusable="False">
+        <ComboBox.ItemTemplate>
+          <DataTemplate x:DataType="x:String">
+            <TextBlock Text="{Binding}" FontFamily="{Binding}" />
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+      <NumericUpDown Width="90" Minimum="1" Maximum="2000" Increment="2" FormatString="0.#"
+                     Value="{Binding Tools.Settings.FontSize, Converter={x:Static views:FloatConverter.Instance}}" />
+      <TextBlock Text="px" VerticalAlignment="Center" Classes="dim" Margin="-6,0,0,0" />
+      <StackPanel Orientation="Horizontal" Spacing="2">
+        <ToggleButton Classes="icon" Focusable="False" IsChecked="{Binding Tools.Settings.Bold}" ToolTip.Tip="Bold">
+          <TextBlock Text="B" FontWeight="Bold" />
+        </ToggleButton>
+        <ToggleButton Classes="icon" Focusable="False" IsChecked="{Binding Tools.Settings.Italic}" ToolTip.Tip="Italic">
+          <TextBlock Text="I" FontStyle="Italic" FontFamily="Georgia,serif" />
+        </ToggleButton>
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="2">
+        <ToggleButton Classes="icon" Width="NaN" Padding="6,2" Focusable="False" ToolTip.Tip="Align left"
+                      IsChecked="{Binding Tools.Settings.TextAlign, Converter={x:Static views:EnumEqualsConverter.Instance}, ConverterParameter=Left}">
+          <TextBlock Text="Left" FontSize="11" />
+        </ToggleButton>
+        <ToggleButton Classes="icon" Width="NaN" Padding="6,2" Focusable="False" ToolTip.Tip="Centre"
+                      IsChecked="{Binding Tools.Settings.TextAlign, Converter={x:Static views:EnumEqualsConverter.Instance}, ConverterParameter=Center}">
+          <TextBlock Text="Center" FontSize="11" />
+        </ToggleButton>
+        <ToggleButton Classes="icon" Width="NaN" Padding="6,2" Focusable="False" ToolTip.Tip="Align right"
+                      IsChecked="{Binding Tools.Settings.TextAlign, Converter={x:Static views:EnumEqualsConverter.Instance}, ConverterParameter=Right}">
+          <TextBlock Text="Right" FontSize="11" />
+        </ToggleButton>
+      </StackPanel>
+      <TextBlock Classes="dim small" Text="Colour: foreground" VerticalAlignment="Center" />
+    </StackPanel>
+
+    <!-- move -->
+    <StackPanel Classes="group" IsVisible="{Binding Tools.IsMoveTool}">
+      <Button Content="Free Transform (Ctrl+T)" Command="{Binding FreeTransformCommand}" Focusable="False" IsVisible="{Binding !Tools.TransformActive}" />
+      <Button Content="Flip Horizontal" Command="{Binding FlipLayerHorizontalCommand}" Focusable="False" IsVisible="{Binding !Tools.TransformActive}" />
+      <Button Content="Flip Vertical" Command="{Binding FlipLayerVerticalCommand}" Focusable="False" IsVisible="{Binding !Tools.TransformActive}" />
+    </StackPanel>
+    <StackPanel Classes="group" IsVisible="{Binding Tools.TransformActive}">
+      <TextBlock Text="Transforming: drag handles to scale (Shift: proportional), outside to rotate." VerticalAlignment="Center" Classes="dim" />
+      <Button Content="Apply" Classes="accent" Click="OnCommit" Focusable="False" />
+      <Button Content="Cancel" Click="OnCancel" Focusable="False" />
+    </StackPanel>
+
+    <!-- crop -->
+    <StackPanel Classes="group" IsVisible="{Binding Tools.IsCropTool}">
+      <TextBlock Text="Drag a crop box, then press Enter." VerticalAlignment="Center" Classes="dim" />
+      <Button Content="Crop" Classes="accent" Click="OnCommit" Focusable="False" IsEnabled="{Binding Tools.CropPending}" />
+      <Button Content="Cancel" Click="OnCancel" Focusable="False" IsEnabled="{Binding Tools.CropPending}" />
+    </StackPanel>
+
+    <!-- hand / zoom -->
+    <StackPanel Classes="group" IsVisible="{Binding Tools.IsViewTool}">
+      <Button Content="Fit on Screen" Command="{Binding FitOnScreenCommand}" Focusable="False" />
+      <Button Content="100%" Command="{Binding ActualPixelsCommand}" Focusable="False" />
+      <Button Content="Zoom In" Command="{Binding ZoomInCommand}" Focusable="False" />
+      <Button Content="Zoom Out" Command="{Binding ZoomOutCommand}" Focusable="False" />
+    </StackPanel>
+
+    <!-- eyedropper -->
+    <StackPanel Classes="group" IsVisible="{Binding Tools.IsEyedropperTool}">
+      <TextBlock Text="Samples the merged image. Alt+click picks the background colour." VerticalAlignment="Center" Classes="dim" />
+    </StackPanel>
+  </StackPanel>
+</UserControl>

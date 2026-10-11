@@ -1,0 +1,189 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:StrataPhoto.App.ViewModels"
+        xmlns:views="using:StrataPhoto.App.Views"
+        xmlns:controls="using:StrataPhoto.App.Controls"
+        xmlns:theme="using:StrataPhoto.App.Theme"
+        xmlns:dockc="using:Dock.Avalonia.Controls"
+        xmlns:recycling="using:Avalonia.Controls.Recycling"
+        x:Class="StrataPhoto.App.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="{Binding WindowTitle}"
+        Icon="avares://StrataPhoto/Assets/strata-photo.ico"
+        Width="1500" Height="920" MinWidth="900" MinHeight="600"
+        WindowStartupLocation="CenterScreen">
+
+  <Window.Resources>
+    <!-- One cached view per dockable (by Id). Without this, Dock reuses a panel's view for another panel. -->
+    <recycling:ControlRecycling x:Key="ControlRecyclingKey" TryToUseIdAsKey="True" />
+  </Window.Resources>
+
+  <DockPanel>
+    <!-- Menu bar -->
+    <Menu DockPanel.Dock="Top" Name="MainMenu">
+      <MenuItem Header="_File">
+        <MenuItem Header="_New…" Command="{Binding NewDocumentCommand}" InputGesture="Ctrl+N" />
+        <MenuItem Header="_Open…" Command="{Binding OpenCommand}" InputGesture="Ctrl+O" />
+        <Separator />
+        <MenuItem Header="_Close" Command="{Binding CloseDocumentCommand}" InputGesture="Ctrl+W" />
+        <MenuItem Header="_Save" Command="{Binding SaveCommand}" InputGesture="Ctrl+S" />
+        <MenuItem Header="Save _As…" Command="{Binding SaveAsCommand}" InputGesture="Ctrl+Shift+S" />
+        <MenuItem Header="_Export As…" Command="{Binding ExportCommand}" InputGesture="Ctrl+Shift+E" />
+        <Separator />
+        <MenuItem Header="E_xit" Command="{Binding ExitCommand}" InputGesture="Alt+F4" />
+      </MenuItem>
+      <MenuItem Header="_Edit">
+        <MenuItem Header="_Undo" Command="{Binding UndoCommand}" InputGesture="Ctrl+Z" />
+        <MenuItem Header="_Redo" Command="{Binding RedoCommand}" InputGesture="Ctrl+Shift+Z" />
+        <Separator />
+        <MenuItem Header="Cu_t" Command="{Binding CutCommand}" InputGesture="Ctrl+X" />
+        <MenuItem Header="_Copy" Command="{Binding CopyCommand}" InputGesture="Ctrl+C" />
+        <MenuItem Header="Copy _Merged" Command="{Binding CopyMergedCommand}" InputGesture="Ctrl+Shift+C" />
+        <MenuItem Header="_Paste" Command="{Binding PasteCommand}" InputGesture="Ctrl+V" />
+        <MenuItem Header="C_lear" Command="{Binding ClearCommand}" InputGesture="Delete" />
+        <Separator />
+        <MenuItem Header="_Fill with Foreground" Command="{Binding FillForegroundCommand}" InputGesture="Alt+Back" />
+        <MenuItem Header="Fill with _Background" Command="{Binding FillBackgroundCommand}" InputGesture="Ctrl+Back" />
+        <Separator />
+        <MenuItem Header="Free _Transform" Command="{Binding FreeTransformCommand}" InputGesture="Ctrl+T" />
+        <MenuItem Header="Flip Layer _Horizontal" Command="{Binding FlipLayerHorizontalCommand}" />
+        <MenuItem Header="Flip Layer _Vertical" Command="{Binding FlipLayerVerticalCommand}" />
+      </MenuItem>
+      <MenuItem Header="_Image">
+        <MenuItem Header="_Adjustments">
+          <MenuItem Header="_Brightness/Contrast…" Command="{Binding AdjustCommand}" CommandParameter="brightness-contrast" />
+          <MenuItem Header="_Levels…" Command="{Binding AdjustCommand}" CommandParameter="levels" InputGesture="Ctrl+L" />
+          <MenuItem Header="_Curves…" Command="{Binding AdjustCommand}" CommandParameter="curves" InputGesture="Ctrl+M" />
+          <MenuItem Header="_Exposure…" Command="{Binding AdjustCommand}" CommandParameter="exposure" />
+          <Separator />
+          <MenuItem Header="_Hue/Saturation…" Command="{Binding AdjustCommand}" CommandParameter="hue-saturation" InputGesture="Ctrl+U" />
+          <MenuItem Header="Color _Balance…" Command="{Binding AdjustCommand}" CommandParameter="color-balance" InputGesture="Ctrl+B" />
+          <MenuItem Header="Black &amp; _White…" Command="{Binding AdjustCommand}" CommandParameter="black-white" InputGesture="Ctrl+Alt+Shift+B" />
+          <Separator />
+          <MenuItem Header="_Invert" Command="{Binding AdjustCommand}" CommandParameter="invert" InputGesture="Ctrl+I" />
+        </MenuItem>
+        <Separator />
+        <MenuItem Header="Image _Size…" Command="{Binding ImageSizeCommand}" InputGesture="Ctrl+Alt+I" />
+        <MenuItem Header="_Canvas Size…" Command="{Binding CanvasSizeCommand}" InputGesture="Ctrl+Alt+C" />
+        <MenuItem Header="Image _Rotation">
+          <MenuItem Header="180°" Command="{Binding RotateCommand}" CommandParameter="180" />
+          <MenuItem Header="90° Clockwise" Command="{Binding RotateCommand}" CommandParameter="90" />
+          <MenuItem Header="90° Counter Clockwise" Command="{Binding RotateCommand}" CommandParameter="270" />
+          <MenuItem Header="Arbitrary…" Command="{Binding RotateArbitraryCommand}" />
+          <Separator />
+          <MenuItem Header="Flip Canvas Horizontal" Command="{Binding FlipCanvasCommand}" CommandParameter="h" />
+          <MenuItem Header="Flip Canvas Vertical" Command="{Binding FlipCanvasCommand}" CommandParameter="v" />
+        </MenuItem>
+        <MenuItem Header="Crop to Selection" Command="{Binding CropToSelectionCommand}" />
+        <Separator />
+        <MenuItem Header="_Flatten Image" Command="{Binding FlattenCommand}" />
+      </MenuItem>
+      <MenuItem Header="_Layer">
+        <MenuItem Header="_New Layer" Command="{Binding NewLayerCommand}" InputGesture="Ctrl+Shift+N" />
+        <MenuItem Header="New _Group" Command="{Binding NewGroupCommand}" />
+        <MenuItem Header="_Duplicate Layer" Command="{Binding DuplicateLayerCommand}" InputGesture="Ctrl+J" />
+        <MenuItem Header="De_lete Layer" Command="{Binding DeleteLayerCommand}" />
+        <Separator />
+        <MenuItem Header="Group Layers" Command="{Binding GroupLayersCommand}" InputGesture="Ctrl+G" />
+        <MenuItem Header="Ungroup Layers" Command="{Binding UngroupCommand}" InputGesture="Ctrl+Shift+G" />
+        <Separator />
+        <MenuItem Header="Layer _Mask">
+          <MenuItem Header="Reveal All / Reveal Selection" Command="{Binding AddMaskRevealCommand}" />
+          <MenuItem Header="Hide All" Command="{Binding AddMaskHideCommand}" />
+          <Separator />
+          <MenuItem Header="Apply" Command="{Binding ApplyMaskCommand}" />
+          <MenuItem Header="Delete" Command="{Binding DeleteMaskCommand}" />
+        </MenuItem>
+        <MenuItem Header="_Rasterize Type" Command="{Binding RasterizeCommand}" />
+        <Separator />
+        <MenuItem Header="Arrange">
+          <MenuItem Header="Bring Forward" Command="{Binding BringForwardCommand}" InputGesture="Ctrl+OemCloseBrackets" />
+          <MenuItem Header="Send Backward" Command="{Binding SendBackwardCommand}" InputGesture="Ctrl+OemOpenBrackets" />
+        </MenuItem>
+        <MenuItem Header="Merge Down" Command="{Binding MergeDownCommand}" InputGesture="Ctrl+E" />
+        <MenuItem Header="Flatten Image" Command="{Binding FlattenCommand}" />
+      </MenuItem>
+      <MenuItem Header="_Select">
+        <MenuItem Header="_All" Command="{Binding SelectAllCommand}" InputGesture="Ctrl+A" />
+        <MenuItem Header="_Deselect" Command="{Binding DeselectCommand}" InputGesture="Ctrl+D" />
+        <MenuItem Header="_Inverse" Command="{Binding InvertSelectionCommand}" InputGesture="Ctrl+Shift+I" />
+        <Separator />
+        <MenuItem Header="_Feather…" Command="{Binding FeatherCommand}" InputGesture="Shift+F6" />
+        <MenuItem Header="Load Layer _Transparency" Command="{Binding SelectLayerPixelsCommand}" />
+      </MenuItem>
+      <MenuItem Header="Fil_ter">
+        <MenuItem Header="_Gaussian Blur…" Command="{Binding FilterCommand}" CommandParameter="gaussian-blur" />
+        <MenuItem Header="_Sharpen (Unsharp Mask)…" Command="{Binding FilterCommand}" CommandParameter="sharpen" />
+        <MenuItem Header="Add _Noise…" Command="{Binding FilterCommand}" CommandParameter="noise" />
+        <MenuItem Header="_Pixelate (Mosaic)…" Command="{Binding FilterCommand}" CommandParameter="pixelate" />
+        <MenuItem Header="_Emboss…" Command="{Binding FilterCommand}" CommandParameter="emboss" />
+      </MenuItem>
+      <MenuItem Header="_View">
+        <MenuItem Header="Zoom _In" Command="{Binding ZoomInCommand}" InputGesture="Ctrl+OemPlus" />
+        <MenuItem Header="Zoom _Out" Command="{Binding ZoomOutCommand}" InputGesture="Ctrl+OemMinus" />
+        <MenuItem Header="_Fit on Screen" Command="{Binding FitOnScreenCommand}" InputGesture="Ctrl+D0" />
+        <MenuItem Header="100%" Command="{Binding ActualPixelsCommand}" InputGesture="Ctrl+D1" />
+        <Separator />
+        <MenuItem Header="_Rulers" Command="{Binding ToggleRulersCommand}" InputGesture="Ctrl+R">
+          <MenuItem.Icon>
+            <CheckBox IsChecked="{Binding ShowRulers}" IsHitTestVisible="False" BorderThickness="0" Padding="0" />
+          </MenuItem.Icon>
+        </MenuItem>
+      </MenuItem>
+      <MenuItem Header="_Window">
+        <MenuItem Header="Layers" Command="{Binding ShowPanelByIdCommand}" CommandParameter="Layers" InputGesture="F7" />
+        <MenuItem Header="Adjustments" Command="{Binding ShowPanelByIdCommand}" CommandParameter="Adjustments" />
+        <MenuItem Header="Properties" Command="{Binding ShowPanelByIdCommand}" CommandParameter="Properties" />
+        <MenuItem Header="History" Command="{Binding ShowPanelByIdCommand}" CommandParameter="History" />
+        <MenuItem Header="Color" Command="{Binding ShowPanelByIdCommand}" CommandParameter="Color" InputGesture="F6" />
+        <MenuItem Header="Swatches" Command="{Binding ShowPanelByIdCommand}" CommandParameter="Swatches" />
+        <Separator />
+        <MenuItem Header="_Reset Layout" Command="{Binding ResetLayoutCommand}" />
+      </MenuItem>
+      <MenuItem Header="_Help">
+        <MenuItem Header="_Keyboard Shortcuts" Command="{Binding ShortcutsCommand}" InputGesture="F1" />
+        <MenuItem Header="_About Strata Photo" Command="{Binding AboutCommand}" />
+      </MenuItem>
+    </Menu>
+
+    <!-- Options bar for the active tool -->
+    <Border DockPanel.Dock="Top" Classes="bar" BorderThickness="0,1,0,1" Height="38">
+      <views:OptionsBar DataContext="{Binding}" />
+    </Border>
+
+    <!-- Status bar -->
+    <Border DockPanel.Dock="Bottom" Classes="bar" BorderThickness="0,1,0,0" Height="24">
+      <Grid ColumnDefinitions="90,130,190,*" Margin="8,0">
+        <TextBlock Grid.Column="0" Text="{Binding ZoomText}" VerticalAlignment="Center" Classes="small" />
+        <TextBlock Grid.Column="1" Text="{Binding DocSizeText}" VerticalAlignment="Center" Classes="small dim" />
+        <TextBlock Grid.Column="2" Text="{Binding CursorText}" VerticalAlignment="Center" Classes="small dim" FontFamily="Cascadia Mono,Consolas,monospace" />
+        <TextBlock Grid.Column="3" Text="{Binding StatusMessage}" VerticalAlignment="Center" Classes="small dim" TextTrimming="CharacterEllipsis" />
+      </Grid>
+    </Border>
+
+    <!-- Tools strip -->
+    <Border DockPanel.Dock="Left" Classes="bar" BorderThickness="0,0,1,0" Width="44">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Bottom" Margin="0,6,0,10" HorizontalAlignment="Center" Spacing="4">
+          <controls:ColorPairView Name="ColorPair" Width="34" Height="34" ToolTip.Tip="Foreground / background colour (click to edit in the Color panel)" />
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+            <Button Classes="icon" Width="18" Height="18" Padding="1" Command="{Binding SwapColorsCommand}" ToolTip.Tip="Swap colours (X)" Focusable="False">
+              <theme:IconView Icon="swap" Width="12" Height="12" />
+            </Button>
+            <Button Classes="icon" Width="18" Height="18" Padding="1" Command="{Binding ResetColorsCommand}" ToolTip.Tip="Default colours (D)" Focusable="False">
+              <theme:IconView Icon="default-colors" Width="12" Height="12" />
+            </Button>
+          </StackPanel>
+        </StackPanel>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel Name="ToolsPanel" Margin="0,4,0,0" />
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+
+    <!-- Documents and dockable panels -->
+    <dockc:DockControl Name="Dock" Layout="{Binding Layout}" Factory="{Binding Factory}"
+                       InitializeLayout="False" InitializeFactory="True"
+                       recycling:ControlRecyclingDataTemplate.ControlRecycling="{StaticResource ControlRecyclingKey}" />
+  </DockPanel>
+</Window>

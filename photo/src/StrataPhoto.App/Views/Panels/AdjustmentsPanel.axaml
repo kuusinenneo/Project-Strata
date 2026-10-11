@@ -1,0 +1,57 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:panels="using:StrataPhoto.App.ViewModels.Panels"
+             xmlns:vm="using:StrataPhoto.App.ViewModels"
+             xmlns:controls="using:StrataPhoto.App.Controls"
+             xmlns:theme="using:StrataPhoto.App.Theme"
+             x:Class="StrataPhoto.App.Views.Panels.AdjustmentsPanel"
+             x:DataType="panels:AdjustmentsPanelViewModel">
+  <Panel Margin="6">
+    <!-- picking an adjustment -->
+    <DockPanel IsVisible="{Binding IsPicking}">
+      <TextBlock DockPanel.Dock="Top" Text="{Binding Message}" Classes="dim small" TextWrapping="Wrap" Margin="2,0,2,6" />
+      <ScrollViewer>
+        <ItemsControl ItemsSource="{Binding Entries}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="panels:AdjustmentEntry">
+              <Button Width="128" Height="30" Margin="2" HorizontalContentAlignment="Left" Focusable="False"
+                      Command="{Binding $parent[ItemsControl].((panels:AdjustmentsPanelViewModel)DataContext).BeginCommand}"
+                      CommandParameter="{Binding Id}" ToolTip.Tip="{Binding Name}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <theme:IconView Icon="{Binding Icon}" Width="14" Height="14" Foreground="{DynamicResource Strata.accentSoftBrush}" />
+                  <TextBlock Text="{Binding Name}" FontSize="11" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </DockPanel>
+
+    <!-- editing one -->
+    <DockPanel IsVisible="{Binding IsEditing}">
+      <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,6">
+        <TextBlock Text="{Binding Session.Title}" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="1" Text="working…" Classes="dim small" IsVisible="{Binding Session.Busy}" VerticalAlignment="Center" />
+      </Grid>
+      <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="6" Margin="0,8,0,0">
+        <CheckBox Content="Preview" IsChecked="{Binding Session.PreviewEnabled}" Focusable="False" Margin="0,0,8,0" />
+        <Button Content="Reset" Command="{Binding ResetCommand}" Focusable="False" />
+        <Button Content="Cancel" Command="{Binding CancelCommand}" Focusable="False" />
+        <Button Content="Apply" Command="{Binding ApplyCommand}" Classes="accent" Focusable="False" />
+      </StackPanel>
+      <ScrollViewer>
+        <StackPanel Name="Editors" Spacing="8">
+          <controls:CurveEditor Name="Curve" IsVisible="{Binding IsCurves}" Height="200" Width="200" HorizontalAlignment="Left" />
+          <TextBlock IsVisible="{Binding IsCurves}" Classes="dim small" TextWrapping="Wrap"
+                     Text="Click to add points, drag to move them, right-click or drag out to remove." />
+        </StackPanel>
+      </ScrollViewer>
+    </DockPanel>
+  </Panel>
+</UserControl>
