@@ -6,9 +6,38 @@ It has a dockable, dark, multi-panel layout (Source / Program monitors, Project 
 panels, a multi-track timeline, tools strip and audio meters), effects, transitions,
 text overlays, undo/redo, JSON project files and MP4 (H.264 + AAC) export.
 
-## Requirements
+## Running the Windows app (Strata.exe)
 
-- Windows 10/11, macOS or Linux
+The packaged app lives in the `dist\Strata` folder of the project:
+
+```
+Project-Strata\
+  dist\
+    Strata\
+      Strata.exe      <- double-click this
+      _internal\      <- Python, Qt and FFmpeg (must stay next to Strata.exe)
+      licenses\
+```
+
+- **File Explorer:** open `Project-Strata\dist\Strata` and double-click **Strata.exe**.
+- **PowerShell** (from the project folder): `.\dist\Strata\Strata.exe`
+- **Open a project directly:** `.\dist\Strata\Strata.exe path\to\project.strata.json`
+- **Shortcut:** right-click `Strata.exe` → *Show more options* → *Send to* → *Desktop
+  (create shortcut)*, or *Pin to Start* / *Pin to taskbar*.
+
+Good to know:
+
+- The `dist` folder is not stored in git. On a fresh clone, build it first with
+  `.\build.bat` (see [Build a Windows app](#build-a-windows-app-exe)).
+- Keep `Strata.exe` inside its folder. To move it or give it to someone, copy or zip
+  the **whole** `dist\Strata` folder; the other PC doesn't need Python or FFmpeg.
+- The exe isn't code-signed, so the first time Windows may show *"Windows protected
+  your PC"*. Click **More info** → **Run anyway**.
+- After changing the code, run `.\build.bat` again to update the exe.
+
+## Requirements (for running from source or building)
+
+- Windows 10/11, macOS or Linux (the .exe build is Windows only)
 - Python 3.10+ (developed on Python 3.13)
 - FFmpeg — nothing to install. The packaged app ships its own copy. From source, Strata
   uses `ffmpeg` on your PATH if present, otherwise the FFmpeg binary bundled with the
@@ -25,7 +54,7 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-## Run
+## Run from source
 
 ```powershell
 python main.py                    # or: python -m strata
