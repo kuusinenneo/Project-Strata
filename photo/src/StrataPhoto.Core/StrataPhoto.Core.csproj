@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Document model, imaging, tools, history and file formats. No UI code. -->
+  <PropertyGroup>
+    <RootNamespace>StrataPhoto.Core</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" Version="2.88.9" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="StrataPhoto.Tests" />
+  </ItemGroup>
+</Project>
