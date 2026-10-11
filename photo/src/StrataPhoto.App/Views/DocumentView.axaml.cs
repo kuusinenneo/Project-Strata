@@ -15,10 +15,10 @@ public partial class DocumentView : UserControl
     public DocumentView()
     {
         InitializeComponent();
-        TextInput.TextChanged += (_, _) =>
+        TextEntry.TextChanged += (_, _) =>
         {
             // TextChanged can arrive late (after a programmatic update), so only push real differences.
-            if (!_syncingText && _session != null && (TextInput.Text ?? "") != _session.Text) _session.Text = TextInput.Text ?? "";
+            if (!_syncingText && _session != null && (TextEntry.Text ?? "") != _session.Text) _session.Text = TextEntry.Text ?? "";
         };
         FinishText.Click += (_, _) =>
         {
@@ -65,20 +65,20 @@ public partial class DocumentView : UserControl
         if (_session == null) return;
         _session.PropertyChanged += OnSessionChanged;
         _syncingText = true;
-        TextInput.Text = _session.Text;
+        TextEntry.Text = _session.Text;
         _syncingText = false;
         PlaceEditor();
-        TextInput.Focus();
-        TextInput.CaretIndex = TextInput.Text?.Length ?? 0;
+        TextEntry.Focus();
+        TextEntry.CaretIndex = TextEntry.Text?.Length ?? 0;
     }
 
     private void OnSessionChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(TextEditSession.Anchor)) PlaceEditor();
-        else if (e.PropertyName == nameof(TextEditSession.Text) && _session != null && TextInput.Text != _session.Text)
+        else if (e.PropertyName == nameof(TextEditSession.Text) && _session != null && TextEntry.Text != _session.Text)
         {
             _syncingText = true;
-            TextInput.Text = _session.Text;
+            TextEntry.Text = _session.Text;
             _syncingText = false;
         }
     }

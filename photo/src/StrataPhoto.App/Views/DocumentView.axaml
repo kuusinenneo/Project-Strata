@@ -18,7 +18,7 @@
               BoxShadow="0 4 14 0 #80000000">
         <StackPanel Spacing="4" Width="260">
           <TextBlock Text="Text (Ctrl+Enter or Esc to finish)" Classes="dim small" />
-          <TextBox Name="TextInput" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="54" MaxHeight="200" />
+          <TextBox Name="TextEntry" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="54" MaxHeight="200" />
           <Button Name="FinishText" Content="Done" HorizontalAlignment="Right" Classes="accent" />
         </StackPanel>
       </Border>

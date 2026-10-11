@@ -12,6 +12,9 @@ using StrataPhoto.Core.IO;
 using StrataPhoto.Core.Model;
 using StrataPhoto.Core.Tools;
 
+// Drag and drop uses the IDataObject API, obsolete in Avalonia 11.3 but still supported there.
+#pragma warning disable CS0618
+
 namespace StrataPhoto.App.Views;
 
 public partial class MainWindow : Window, IDialogService

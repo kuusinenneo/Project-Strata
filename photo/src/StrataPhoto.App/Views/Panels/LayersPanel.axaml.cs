@@ -5,6 +5,9 @@ using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using StrataPhoto.App.ViewModels.Panels;
 
+// Drag and drop uses the IDataObject API, obsolete in Avalonia 11.3 but still supported there.
+#pragma warning disable CS0618
+
 namespace StrataPhoto.App.Views.Panels;
 
 /// <summary>
