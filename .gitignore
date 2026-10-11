@@ -229,5 +229,6 @@ __marimo__/
 /photo/**/obj/
 /photo/publish/
 /photo/TestResults/
+!/photo/src/StrataPhoto.App/app.manifest
 *.user
 .vs/
