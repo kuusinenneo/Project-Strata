@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Platform;
+using Avalonia.Rendering;
 using Avalonia.Rendering.SceneGraph;
 using Avalonia.Skia;
 using Avalonia.Threading;
@@ -18,7 +19,7 @@ namespace StrataPhoto.App.Canvas;
 /// The editing surface: shows the document's composite (GPU tiles) with zoom and pan, forwards
 /// pointer and pen input to the active tool, and draws selection outlines and tool overlays.
 /// </summary>
-public sealed class CanvasView : Control
+public sealed class CanvasView : Control, ICustomHitTest
 {
     private DocumentViewModel? _vm;
     private readonly DispatcherTimer _antsTimer;
@@ -103,6 +104,10 @@ public sealed class CanvasView : Control
     }
 
     // ------------------------------------------------------------------ coordinates
+
+    // The surface is drawn by a custom draw operation and has no background, so without this
+    // Avalonia's hit test would find nothing here and pointer input would never reach the tools.
+    public bool HitTest(Point point) => new Rect(Bounds.Size).Contains(point);
 
     public SKPoint ToDoc(Point p)
     {
