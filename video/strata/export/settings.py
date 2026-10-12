@@ -7,7 +7,21 @@ from typing import Optional
 from ..model.project import Project
 
 FRAME_RATES = ["Match source", "24", "25", "30", "50", "60"]
-RESOLUTIONS = {"Match sequence": None, "720p": 720, "1080p": 1080, "1440p": 1440, "4K (2160p)": 2160}
+# A height keeps the sequence's aspect ratio; a (width, height) pair is a fixed frame that clips are
+# fitted into (letterboxed/pillarboxed), e.g. vertical or square video from a 16:9 sequence.
+RESOLUTIONS = {"Match sequence": None, "720p": 720, "1080p": 1080, "1440p": 1440, "4K (2160p)": 2160,
+               "1920 × 1080 (16:9)": (1920, 1080), "1080 × 1920 (9:16 vertical)": (1080, 1920),
+               "1080 × 1080 (1:1 square)": (1080, 1080)}
+
+# Platform presets: values for the export dialog's fields.
+EXPORT_PRESETS = {
+    "YouTube 1080p": {"resolution": "1920 × 1080 (16:9)", "frame_rate": "Match source", "quality": "High",
+                      "speed": "Balanced", "audio_bitrate_kbps": 192},
+    "TikTok / Reels / Shorts (1080 × 1920)": {"resolution": "1080 × 1920 (9:16 vertical)", "frame_rate": "30",
+                                              "quality": "High", "speed": "Balanced", "audio_bitrate_kbps": 192},
+    "Instagram square (1080 × 1080)": {"resolution": "1080 × 1080 (1:1 square)", "frame_rate": "30",
+                                       "quality": "High", "speed": "Balanced", "audio_bitrate_kbps": 192},
+}
 QUALITY_CRF = {"Low": 28, "Medium": 23, "High": 19, "Very high": 16}
 CUSTOM_BITRATE = "Custom bitrate"
 SPEED_PRESETS = {"Fast": "veryfast", "Balanced": "medium", "Best": "slow"}
@@ -16,6 +30,12 @@ AUDIO_BITRATES = [128, 192, 320]
 # Rough bits per pixel per frame that x264 produces at each CRF for typical footage;
 # used only for the size estimate shown before export.
 _BPP = {28: 0.035, 23: 0.07, 19: 0.12, 16: 0.18}
+
+
+def apply_preset(s: "ExportSettings", name: str) -> "ExportSettings":
+    for k, v in EXPORT_PRESETS[name].items():
+        setattr(s, k, v)
+    return s
 
 
 @dataclass
@@ -51,6 +71,8 @@ def resolve_fps(project: Project, s: ExportSettings) -> float:
 def resolve_size(project: Project, s: ExportSettings) -> tuple[int, int]:
     seq = project.sequence
     h = RESOLUTIONS.get(s.resolution)
+    if isinstance(h, tuple):
+        return h
     if h is None:
         w, h = seq.width, seq.height
     else:

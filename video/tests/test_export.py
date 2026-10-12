@@ -69,3 +69,16 @@ def test_export_cancel(qapp, project, tmp_path):
 def test_export_empty(qapp, tmp_path):
     with pytest.raises(ExportError):
         Exporter(Project(), ExportSettings(output_path=str(tmp_path / "e.mp4"))).run()
+
+
+def test_platform_presets(qapp, project, tmp_path):
+    from strata.export.settings import EXPORT_PRESETS, apply_preset
+    sizes = {name: resolve_size(project, apply_preset(ExportSettings(), name)) for name in EXPORT_PRESETS}
+    assert sizes == {"YouTube 1080p": (1920, 1080), "TikTok / Reels / Shorts (1080 × 1920)": (1080, 1920),
+                     "Instagram square (1080 × 1080)": (1080, 1080)}
+    # a vertical export of the 4:3 sequence: clips are fitted into the tall frame
+    out = str(tmp_path / "vertical.mp4")
+    s = apply_preset(ExportSettings(output_path=out, speed="Fast", range_end=1.0), "TikTok / Reels / Shorts (1080 × 1920)")
+    Exporter(project, s).run(lambda d, t, eta: None)
+    m = probe(out)
+    assert (m.width, m.height) == (1080, 1920)

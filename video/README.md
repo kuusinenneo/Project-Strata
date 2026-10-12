@@ -126,7 +126,8 @@ rendering, export and headless UI interactions.
 6. **Text**: use the text tool (T), drag a text preset from the Effects tab, or
    *Clip → Add Text at Playhead*. Pick a layout preset (centered title, lower third, top
    caption, subtitle), font, size, colour, background box and fades in Effect Controls.
-7. **Export** with *File → Export Media* (Ctrl+M): choose frame rate, resolution,
+7. **Export** with *File → Export Media* (Ctrl+M): pick a preset (YouTube 1080p, TikTok/Reels/Shorts
+   1080×1920, Instagram square 1080×1080; clips are fitted into the frame) or choose frame rate, resolution,
    quality (CRF presets or a custom bitrate), encoding speed and audio bitrate. The
    estimated file size updates as you change settings, and the progress bar shows the
    time remaining with a cancel button.

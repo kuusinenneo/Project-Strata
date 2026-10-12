@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (QComboBox, QDialog, QDialogButtonBox, QFileDialog
                                QProgressBar, QPushButton, QSpinBox, QVBoxLayout)
 
 from ..export.exporter import ExportCancelled, Exporter
-from ..export.settings import (AUDIO_BITRATES, CUSTOM_BITRATE, FRAME_RATES, QUALITY_CRF,
+from ..export.settings import (AUDIO_BITRATES, CUSTOM_BITRATE, EXPORT_PRESETS, FRAME_RATES, QUALITY_CRF,
                                RESOLUTIONS, SPEED_PRESETS, ExportSettings, estimate_size_bytes,
                                export_range, format_size, resolve_fps, resolve_size)
 from .playback import timecode
@@ -96,8 +96,16 @@ class ExportDialog(QDialog):
             self.range.addItem("Sequence In to Out", "inout")
             self.range.setCurrentIndex(1)
 
+        self.preset = QComboBox()
+        self.preset.addItem("Custom", None)
+        for name in EXPORT_PRESETS:
+            self.preset.addItem(name, name)
+        self.preset.currentIndexChanged.connect(self._apply_preset)
+        self._applying_preset = False
+
         settings = QGroupBox("Video (H.264) and Audio (AAC)")
         form = QFormLayout(settings)
+        form.addRow("Preset", self.preset)
         form.addRow("Output file", path_row)
         form.addRow("Range", self.range)
         form.addRow("Frame rate", self.fps)
@@ -132,6 +140,8 @@ class ExportDialog(QDialog):
 
         for w in (self.fps, self.res, self.quality, self.speed, self.abr, self.range):
             w.currentIndexChanged.connect(self._update_summary)
+        for w in (self.fps, self.res, self.quality, self.speed, self.abr):
+            w.currentIndexChanged.connect(self._preset_edited)
         self.bitrate.valueChanged.connect(self._update_summary)
         self._update_summary()
 
@@ -151,6 +161,28 @@ class ExportDialog(QDialog):
             s.range_start = seq.mark_in or 0.0
             s.range_end = seq.mark_out if seq.mark_out is not None else None
         return s
+
+    def _apply_preset(self) -> None:
+        name = self.preset.currentData()
+        if name is None:
+            return
+        values = EXPORT_PRESETS[name]
+        self._applying_preset = True
+        try:
+            for combo, key in ((self.res, "resolution"), (self.fps, "frame_rate"), (self.quality, "quality"),
+                               (self.speed, "speed"), (self.abr, "audio_bitrate_kbps")):
+                i = combo.findData(values[key])
+                if i >= 0:
+                    combo.setCurrentIndex(i)
+        finally:
+            self._applying_preset = False
+        self._update_summary()
+
+    def _preset_edited(self) -> None:
+        if not self._applying_preset and self.preset.currentIndex() != 0:
+            self.preset.blockSignals(True)
+            self.preset.setCurrentIndex(0)  # edited by hand: now a custom setting
+            self.preset.blockSignals(False)
 
     def _update_summary(self) -> None:
         s = self.settings()

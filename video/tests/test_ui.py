@@ -512,3 +512,17 @@ def test_lut_controls(win, media_dir, tmp_path):
     assert win.effect_controls.lut_label.text() == "id.cube"
     win.effect_controls.lut_clear.click()
     assert c.clip(clip.id).effects.lut_path == ""
+
+
+def test_export_presets_in_dialog(win, media_dir):
+    from strata.ui.export_dialog import ExportDialog
+    c = win.controller
+    (vid,) = media(win, media_dir, "video.mp4")
+    c.add_media_to_timeline([vid.id], None, 0.0)
+    dlg = ExportDialog(c, win)
+    dlg.preset.setCurrentIndex(dlg.preset.findData("Instagram square (1080 × 1080)"))
+    assert "1080×1080" in dlg.summary.text()
+    assert dlg.fps.currentData() == "30"
+    dlg.quality.setCurrentIndex(0)  # editing a field makes it a custom setting
+    assert dlg.preset.currentData() is None
+    assert "1080×1080" in dlg.summary.text()

@@ -25,6 +25,7 @@
 - Video: keyframes for scale, position, rotation and opacity (plus a new Rotation control); diamonds on timeline clips; keyframes stay put when clips are split or trimmed
 - Video: 3D .cube LUT loading with strength (Effect Controls → Color & Blur); brightness/contrast/saturation already existed
 - Video: reverse playback for clips (video + linked audio; Effect Controls checkbox and Effects-panel item). Slow motion / fast forward already existed (0.1x-16x)
+- Video: export presets (YouTube 1080p, TikTok/Reels/Shorts 1080x1920, Instagram square 1080x1080) and fixed-frame resolutions; progress bar and cancel already existed
 
 ### In progress
 - (none)
