@@ -239,5 +239,7 @@ __marimo__/
 /launcher/**/obj/
 /launcher/publish/
 !/photo/src/StrataPhoto.App/app.manifest
+!/pdf/src/StrataPdf.App/app.manifest
+!/launcher/src/StrataLauncher/app.manifest
 *.user
 .vs/
