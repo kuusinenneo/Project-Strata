@@ -212,3 +212,21 @@ public class WorkspaceAndSaveTests
         Assert.Equal(0, skipped);
     }
 }
+
+public class PageGeometryTests
+{
+    [Theory]
+    [InlineData(0)]
+    [InlineData(90)]
+    [InlineData(180)]
+    [InlineData(270)]
+    public void ShownAndBaseRoundTrip(int rotation)
+    {
+        var page = new PageItem(Guid.NewGuid(), "s1", 0, 400, 200, rotation);
+        var b = PageGeometry.ToBase(page, 30, 50);
+        var s = PageGeometry.ToShown(page, b.X, b.Y);
+        Assert.Equal((30.0, 50.0), (s.X, s.Y));
+        Assert.InRange(b.X, 0, 400);
+        Assert.InRange(b.Y, 0, 200);
+    }
+}

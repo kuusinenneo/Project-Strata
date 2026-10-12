@@ -1,0 +1,250 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:StrataPdf.App.ViewModels"
+        xmlns:controls="using:StrataPdf.App.Controls"
+        xmlns:ui="using:Strata.Ui"
+        xmlns:model="using:StrataPdf.Core.Model"
+        x:Class="StrataPdf.App.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="{Binding WindowTitle}"
+        Icon="avares://StrataPDF/Assets/strata-pdf.ico"
+        Width="1400" Height="900" MinWidth="900" MinHeight="560"
+        WindowStartupLocation="CenterScreen">
+  <Window.Styles>
+    <Style Selector="TabItem">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="MinHeight" Value="30" />
+      <Setter Property="Padding" Value="10,4" />
+    </Style>
+    <Style Selector="Border.panel-header">
+      <Setter Property="Background" Value="{DynamicResource Strata.bgPanelBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Strata.borderBrush}" />
+      <Setter Property="BorderThickness" Value="0,0,0,1" />
+      <Setter Property="Padding" Value="8,5" />
+    </Style>
+  </Window.Styles>
+
+  <DockPanel>
+    <Menu DockPanel.Dock="Top">
+      <MenuItem Header="_File">
+        <MenuItem Header="_Open…" Command="{Binding OpenCommand}" InputGesture="Ctrl+O" />
+        <MenuItem Header="_Insert / Merge PDF…" Command="{Binding InsertPdfCommand}" InputGesture="Ctrl+I" />
+        <Separator />
+        <MenuItem Header="_Save" Command="{Binding SaveCommand}" InputGesture="Ctrl+S" />
+        <MenuItem Header="Save _As…" Command="{Binding SaveAsCommand}" InputGesture="Ctrl+Shift+S" />
+        <MenuItem Header="Save _Compressed Copy…" Command="{Binding SaveCompressedCommand}" />
+        <Separator />
+        <MenuItem Header="_Extract Selected Pages…" Command="{Binding ExtractPagesCommand}" />
+        <MenuItem Header="S_plit Document…" Command="{Binding SplitCommand}" />
+        <MenuItem Header="Extract _Images to Strata Photo…" Click="OnExtractImages" IsEnabled="{Binding HasDocument}" />
+        <Separator />
+        <MenuItem Header="_Close" Command="{Binding CloseDocumentCommand}" InputGesture="Ctrl+W" />
+        <MenuItem Header="E_xit" Command="{Binding ExitCommand}" InputGesture="Alt+F4" />
+      </MenuItem>
+      <MenuItem Header="_Edit">
+        <MenuItem Header="_Undo" Command="{Binding UndoCommand}" InputGesture="Ctrl+Z" />
+        <MenuItem Header="_Redo" Command="{Binding RedoCommand}" InputGesture="Ctrl+Shift+Z" />
+        <Separator />
+        <MenuItem Header="_Delete Annotation" Command="{Binding DeleteAnnotationCommand}" InputGesture="Delete" />
+      </MenuItem>
+      <MenuItem Header="_Page">
+        <MenuItem Header="Rotate _Right" Command="{Binding RotateRightCommand}" InputGesture="Ctrl+R" />
+        <MenuItem Header="Rotate _Left" Command="{Binding RotateLeftCommand}" InputGesture="Ctrl+Shift+R" />
+        <Separator />
+        <MenuItem Header="Move _Up" Command="{Binding MovePagesUpCommand}" InputGesture="Ctrl+Up" />
+        <MenuItem Header="Move _Down" Command="{Binding MovePagesDownCommand}" InputGesture="Ctrl+Down" />
+        <Separator />
+        <MenuItem Header="De_lete Page(s)" Command="{Binding DeletePagesCommand}" InputGesture="Ctrl+Delete" />
+      </MenuItem>
+      <MenuItem Header="_Document">
+        <MenuItem Header="_Signature…" Command="{Binding EditSignatureCommand}" />
+        <MenuItem Header="Page _Numbers &amp; Watermark" Click="OnShowDocumentTab" />
+        <MenuItem Header="Fill _Form" Click="OnShowFormTab" />
+      </MenuItem>
+      <MenuItem Header="_View">
+        <MenuItem Header="Zoom _In" Command="{Binding ZoomInCommand}" InputGesture="Ctrl+OemPlus" />
+        <MenuItem Header="Zoom _Out" Command="{Binding ZoomOutCommand}" InputGesture="Ctrl+OemMinus" />
+        <MenuItem Header="_Actual Size" Command="{Binding ActualSizeCommand}" InputGesture="Ctrl+D1" />
+        <MenuItem Header="Fit _Width" Command="{Binding FitWidthCommand}" InputGesture="Ctrl+D2" />
+        <MenuItem Header="Fit _Page" Command="{Binding FitPageCommand}" InputGesture="Ctrl+D0" />
+        <Separator />
+        <MenuItem Header="_Next Page" Command="{Binding NextPageCommand}" InputGesture="PageDown" />
+        <MenuItem Header="_Previous Page" Command="{Binding PreviousPageCommand}" InputGesture="PageUp" />
+      </MenuItem>
+      <MenuItem Header="_Help">
+        <MenuItem Header="_Keyboard Shortcuts" Command="{Binding ShortcutsCommand}" InputGesture="F1" />
+        <MenuItem Header="_About Strata PDF" Command="{Binding AboutCommand}" />
+      </MenuItem>
+    </Menu>
+
+    <!-- options bar -->
+    <Border DockPanel.Dock="Top" Classes="bar" BorderThickness="0,1,0,1" Height="38">
+      <StackPanel Orientation="Horizontal" Margin="8,0" Spacing="12" VerticalAlignment="Center">
+        <Border Background="{DynamicResource Strata.bgLightBrush}" CornerRadius="3" Padding="8,3">
+          <TextBlock Text="{Binding ToolName}" FontWeight="SemiBold" />
+        </Border>
+        <StackPanel Orientation="Horizontal" Spacing="3" IsVisible="{Binding ShowsColor}" VerticalAlignment="Center">
+          <TextBlock Text="Colour" VerticalAlignment="Center" Margin="0,0,4,0" />
+          <ItemsControl ItemsSource="{Binding Palette}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="3" /></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="x:String">
+                <Button Width="20" Height="20" MinHeight="0" Padding="0" Focusable="False" Background="{Binding}" BorderBrush="#60FFFFFF" BorderThickness="1"
+                        Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).PickColorCommand}" CommandParameter="{Binding}" ToolTip.Tip="{Binding}" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <TextBox Text="{Binding ColorHex}" Width="80" Margin="6,0,0,0" ToolTip.Tip="Colour (hex)" />
+        </StackPanel>
+        <ui:ValueSlider Label="Width" Minimum="0.5" Maximum="20" Step="0.5" Format="0.#" Unit="pt" SliderWidth="90" Compact="True"
+                        Value="{Binding StrokeWidth}" IsVisible="{Binding ShowsWidth}" />
+        <CheckBox Content="Fill" IsChecked="{Binding FillShapes}" IsVisible="{Binding ShowsWidth}" Focusable="False" />
+        <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding ShowsFont}">
+          <ComboBox ItemsSource="{Binding Fonts}" SelectedItem="{Binding FontFamily}" Width="150" Focusable="False" />
+          <ui:ValueSlider Label="Size" Minimum="6" Maximum="72" Unit="pt" SliderWidth="80" Compact="True" Value="{Binding FontSize}" />
+        </StackPanel>
+        <Button Content="Draw / Load Signature…" Command="{Binding EditSignatureCommand}" Focusable="False" />
+      </StackPanel>
+    </Border>
+
+    <!-- status bar -->
+    <Border DockPanel.Dock="Bottom" Classes="bar" BorderThickness="0,1,0,0" Height="24">
+      <Grid ColumnDefinitions="110,70,*" Margin="8,0">
+        <TextBlock Text="{Binding PageCountText}" VerticalAlignment="Center" Classes="small" />
+        <TextBlock Grid.Column="1" Text="{Binding ZoomText}" VerticalAlignment="Center" Classes="small dim" />
+        <TextBlock Grid.Column="2" Text="{Binding StatusMessage}" VerticalAlignment="Center" Classes="small dim" TextTrimming="CharacterEllipsis" />
+      </Grid>
+    </Border>
+
+    <!-- tools strip -->
+    <Border DockPanel.Dock="Left" Classes="bar" BorderThickness="0,0,1,0" Width="44">
+      <StackPanel Name="ToolsPanel" Margin="0,4,0,0" />
+    </Border>
+
+    <Grid ColumnDefinitions="180,4,*,4,290">
+      <!-- thumbnails -->
+      <DockPanel Grid.Column="0" Background="{DynamicResource Strata.bgBrush}">
+        <Border DockPanel.Dock="Top" Classes="panel-header">
+          <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+            <TextBlock Text="Pages" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Classes="icon" Command="{Binding RotateLeftCommand}" ToolTip.Tip="Rotate left" Focusable="False"><ui:IconView Icon="rotate" /></Button>
+            <Button Grid.Column="2" Classes="icon" Command="{Binding RotateRightCommand}" ToolTip.Tip="Rotate right" Focusable="False"><ui:IconView Icon="rotate-right" /></Button>
+            <Button Grid.Column="3" Classes="icon" Command="{Binding DeletePagesCommand}" ToolTip.Tip="Delete page(s)" Focusable="False"><ui:IconView Icon="trash" /></Button>
+          </Grid>
+        </Border>
+        <ListBox Name="Thumbs" ItemsSource="{Binding Thumbs}" SelectionMode="Multiple,Toggle" Background="{DynamicResource Strata.bgBrush}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:ThumbItem">
+              <StackPanel Margin="4" Spacing="3" HorizontalAlignment="Center">
+                <Border Background="White" BorderBrush="{DynamicResource Strata.borderBrush}" BorderThickness="1" HorizontalAlignment="Center"
+                        MinWidth="60" MinHeight="80">
+                  <Image Source="{Binding Image}" MaxWidth="130" MaxHeight="150" />
+                </Border>
+                <TextBlock Text="{Binding Number}" HorizontalAlignment="Center" Classes="small dim" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+          <ListBox.ContextMenu>
+            <ContextMenu>
+              <MenuItem Header="Rotate Right" Command="{Binding RotateRightCommand}" />
+              <MenuItem Header="Rotate Left" Command="{Binding RotateLeftCommand}" />
+              <MenuItem Header="Move Up" Command="{Binding MovePagesUpCommand}" />
+              <MenuItem Header="Move Down" Command="{Binding MovePagesDownCommand}" />
+              <Separator />
+              <MenuItem Header="Extract Pages…" Command="{Binding ExtractPagesCommand}" />
+              <MenuItem Header="Delete" Command="{Binding DeletePagesCommand}" />
+            </ContextMenu>
+          </ListBox.ContextMenu>
+        </ListBox>
+      </DockPanel>
+      <GridSplitter Grid.Column="1" Background="{DynamicResource Strata.bgDarkBrush}" />
+
+      <!-- pages -->
+      <ScrollViewer Grid.Column="2" Name="Scroller" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                    Background="{DynamicResource Strata.canvasBgBrush}">
+        <controls:DocumentCanvas Name="Canvas" />
+      </ScrollViewer>
+      <GridSplitter Grid.Column="3" Background="{DynamicResource Strata.bgDarkBrush}" />
+
+      <!-- right panel -->
+      <TabControl Grid.Column="4" Name="Tabs" Background="{DynamicResource Strata.bgBrush}" Padding="0">
+        <TabItem Header="Annotation">
+          <ScrollViewer>
+            <StackPanel Margin="10" Spacing="8">
+              <TextBlock Text="Select tool: click an annotation to select it, drag to move, double-click text or a note to edit it."
+                         Classes="dim small" TextWrapping="Wrap" />
+              <StackPanel IsVisible="{Binding HasSelection}" Spacing="6">
+                <TextBlock Text="Selected" Classes="header" />
+                <TextBlock Text="{Binding SelectionText}" TextWrapping="Wrap" />
+                <Button Content="Delete Annotation" Command="{Binding DeleteAnnotationCommand}" Focusable="False" HorizontalAlignment="Left" />
+              </StackPanel>
+              <TextBlock Text="Signature" Classes="header" />
+              <Border Background="White" Height="70" CornerRadius="3" IsVisible="{Binding SignaturePng, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <Image Name="SignaturePreview" Stretch="Uniform" Margin="6" />
+              </Border>
+              <Button Content="Draw / Load Signature…" Command="{Binding EditSignatureCommand}" Focusable="False" HorizontalAlignment="Left" />
+              <TextBlock Text="Redaction" Classes="header" />
+              <TextBlock Text="Redaction boxes (X) permanently remove the text and images underneath when you save: those pages are stored as images."
+                         Classes="dim small" TextWrapping="Wrap" />
+            </StackPanel>
+          </ScrollViewer>
+        </TabItem>
+        <TabItem Header="Form" Name="FormTab">
+          <DockPanel Margin="10">
+            <Button DockPanel.Dock="Bottom" Content="Apply to Document" Classes="accent" Command="{Binding ApplyFormCommand}" Margin="0,8,0,0"
+                    HorizontalAlignment="Right" Focusable="False" />
+            <TextBlock DockPanel.Dock="Top" Text="This document has no fillable form fields." Classes="dim small" TextWrapping="Wrap"
+                       IsVisible="{Binding !HasFormFields}" />
+            <ScrollViewer>
+              <ItemsControl ItemsSource="{Binding FormFields}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:FormFieldItem">
+                    <StackPanel Margin="0,0,0,8" Spacing="2" IsEnabled="{Binding Editable}">
+                      <TextBlock Text="{Binding Label}" Classes="small dim" />
+                      <TextBox Text="{Binding Value}" IsVisible="{Binding IsText}" />
+                      <CheckBox Content="Checked" IsChecked="{Binding Checked}" IsVisible="{Binding IsCheck}" />
+                      <ComboBox ItemsSource="{Binding Field.Options}" SelectedItem="{Binding Value}" IsVisible="{Binding IsChoice}" HorizontalAlignment="Stretch" />
+                      <TextBlock Text="{Binding Value}" IsVisible="{Binding IsOther}" Classes="dim" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </DockPanel>
+        </TabItem>
+        <TabItem Header="Document" Name="DocTab">
+          <ScrollViewer>
+            <StackPanel Margin="10" Spacing="6">
+              <TextBlock Text="Page numbers" Classes="header" />
+              <CheckBox Content="Add page numbers" IsChecked="{Binding PnEnabled}" />
+              <TextBox Text="{Binding PnFormat}" Watermark="Page {n} of {total}" ToolTip.Tip="{}{n} = page number, {total} = page count" />
+              <ComboBox ItemsSource="{Binding StampPositions}" SelectedItem="{Binding PnPosition}" HorizontalAlignment="Stretch" />
+              <ui:ValueSlider Label="Size" Minimum="4" Maximum="36" Unit="pt" Value="{Binding PnFontSize}" />
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="Start at" VerticalAlignment="Center" />
+                <NumericUpDown Value="{Binding PnStart}" Minimum="0" Maximum="9999" Width="100" FormatString="0" />
+              </StackPanel>
+              <CheckBox Content="Skip the first page" IsChecked="{Binding PnSkipFirst}" />
+              <TextBlock Text="Watermark" Classes="header" />
+              <CheckBox Content="Add a watermark" IsChecked="{Binding WmEnabled}" />
+              <TextBox Text="{Binding WmText}" />
+              <ui:ValueSlider Label="Size" Minimum="8" Maximum="200" Unit="pt" Value="{Binding WmFontSize}" />
+              <ui:ValueSlider Label="Opacity" Minimum="1" Maximum="100" Unit="%" Value="{Binding WmOpacity}" />
+              <ui:ValueSlider Label="Angle" Minimum="-90" Maximum="90" Unit="°" Value="{Binding WmAngle}" />
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="Colour" VerticalAlignment="Center" />
+                <TextBox Text="{Binding WmColorHex}" Width="90" />
+              </StackPanel>
+              <Button Content="Apply" Classes="accent" Command="{Binding ApplyStampsCommand}" HorizontalAlignment="Right" Focusable="False" />
+              <TextBlock Text="Compress" Classes="header" />
+              <TextBlock Text="Save a smaller copy: lossless stream compression, or strong (pages become images)." Classes="dim small" TextWrapping="Wrap" />
+              <Button Content="Save Compressed Copy…" Command="{Binding SaveCompressedCommand}" HorizontalAlignment="Left" Focusable="False" />
+            </StackPanel>
+          </ScrollViewer>
+        </TabItem>
+      </TabControl>
+    </Grid>
+  </DockPanel>
+</Window>

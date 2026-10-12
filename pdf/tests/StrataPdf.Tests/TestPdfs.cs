@@ -11,7 +11,7 @@ internal static class TestPdfs
 {
     static TestPdfs()
     {
-        if (GlobalFontSettings.FontResolver == null) GlobalFontSettings.UseWindowsFontsUnderWindows = true;
+        StrataPdf.Core.IO.PdfFonts.Ensure();
     }
 
     public static string Temp(string name)

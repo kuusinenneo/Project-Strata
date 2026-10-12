@@ -50,6 +50,8 @@ def icon_svg(paths) -> str:
 LOGO_COLORS = {
     "video": ("#409cff", "#6ebeff", "#aadcff"),   # blue
     "photo": ("#ff8a3d", "#ffb06e", "#ffd6aa"),   # amber
+    "pdf": ("#e5484d", "#f07a7d", "#f8b4b5"),     # red
+    "suite": ("#409cff", "#ff8a3d", "#e5484d"),   # launcher: one layer per app
 }
 
 

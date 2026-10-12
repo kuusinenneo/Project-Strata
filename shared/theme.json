@@ -56,7 +56,9 @@
     "note": "24x24 SVGs drawn with currentColor. Tool and UI icons use only <path> elements (stroked by default; fill=\"currentColor\" stroke=\"none\" for solid parts, optional opacity) so both apps can render them without a full SVG engine. App logos in app/ are full SVG.",
     "app": {
       "video": "app/strata-video",
-      "photo": "app/strata-photo"
+      "photo": "app/strata-photo",
+      "pdf": "app/strata-pdf",
+      "suite": "app/strata-suite"
     }
   }
 }

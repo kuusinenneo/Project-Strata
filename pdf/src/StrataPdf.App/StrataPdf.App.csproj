@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>StrataPdf.App</RootNamespace>
+    <AssemblyName>StrataPDF</AssemblyName>
+    <AssemblyTitle>Strata PDF</AssemblyTitle>
+    <ApplicationIcon>..\..\..\shared\icons\app\strata-pdf.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Skia" Version="11.3.22" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="SkiaSharp" Version="2.88.9" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\StrataPdf.Core\StrataPdf.Core.csproj" />
+    <ProjectReference Include="..\..\..\shared\dotnet\Strata.Ui\Strata.Ui.csproj" />
+  </ItemGroup>
+
+  <!-- theme.json and the icons come with Strata.Ui; the app logo is copied here. -->
+  <ItemGroup>
+    <None Include="..\..\..\shared\icons\app\strata-pdf.png" Link="shared\icons\app\strata-pdf.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <AvaloniaResource Include="..\..\..\shared\icons\app\strata-pdf.ico" Link="Assets\strata-pdf.ico" />
+  </ItemGroup>
+</Project>

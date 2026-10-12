@@ -26,12 +26,7 @@ public static class PdfSaver
 {
     public const double RedactionDpi = 200;
 
-    static PdfSaver()
-    {
-        // PDFsharp needs to be told where fonts come from; on Windows use the installed fonts.
-        if (OperatingSystem.IsWindows() && GlobalFontSettings.FontResolver == null)
-            GlobalFontSettings.UseWindowsFontsUnderWindows = true;
-    }
+    static PdfSaver() => PdfFonts.Ensure();
 
     public static void Save(PdfWorkspace ws, string path, SaveOptions? options = null)
     {
