@@ -39,7 +39,50 @@
 - (none)
 
 ### Blocked
-- (none)
+- **OCR for scanned PDFs (Tesseract)** — not attempted. It needs the Tesseract engine plus language
+  data installed separately (and a native wrapper), which I couldn't set up and verify unattended.
+  Recommended path: `Tesseract` NuGet package + `tessdata` files, running OCR per page image and
+  writing an invisible text layer with PDFsharp.
+- Nothing else is blocked; no feature had to be reverted.
+
+### Skipped because it already existed
+- Video: undo/redo (snapshot stack, every edit), project save/load (JSON), multiple video/audio tracks
+  (upper video tracks act as overlay tracks), trim handles, snapping, ripple delete, J/K/L, C, V,
+  I/O and Space shortcuts, waveforms, per-clip volume, fades, detach (unlink) audio, cross dissolve,
+  brightness/contrast/saturation, slow motion / fast forward, export progress bar and cancel.
+- Photo: all of Priority 2 (History panel, layers + blend modes, `.sphoto` projects, PNG/JPG/WebP
+  export, rectangle/ellipse/lasso/magic wand + paste to new layer, crop/resize/canvas/rotate/flip,
+  brightness/contrast, hue/saturation, levels, curves, brush/eraser settings, text tool, shortcuts).
+
+### Final summary
+16 commits on `autonomous-update` (main untouched). Everything builds, launches and passes its tests:
+Strata Video 74 tests, Strata Photo 53, Strata PDF 19, plus each app's `--self-test` of the built exe.
+`build-all.bat` was run end to end and produced `dist\Strata Suite\` (launcher + all three apps,
+each finding the others).
+
+- **Strata Video:** autosave + crash recovery, `.strata` files, Dip to Black / Wipe transitions,
+  keyframes (scale, position, rotation, opacity), `.cube` LUTs, reverse playback, YouTube / TikTok /
+  Instagram export presets, background proxies for 4K, Send Frame to Strata Photo, Remove Silence,
+  Detect Scenes and Cut, Auto Subtitles.
+- **Strata PDF (new, `pdf/`):** viewer with thumbnails, merge / split / reorder / rotate / delete,
+  highlight, pen, text, shapes, arrows, sticky notes, signatures, form filling, page numbers,
+  watermarks, real redaction, compression, extract images to Strata Photo, undo/redo, save / save as.
+  Licences: PDFiumCore (Apache-2.0) + PDFium (BSD), PDFsharp (MIT) — no iText, no PyMuPDF.
+- **Suite:** shared C# theme library `shared/dotnet/Strata.Ui` (Photo now uses it too), new icons and
+  logos (Strata PDF, suite), Strata launcher (`launcher/`), `build-all.bat`, root README for all apps.
+
+### New dependencies to install
+- Strata PDF / launcher: nothing new to install beyond the .NET SDK you already have; NuGet packages
+  (PDFiumCore, PDFsharp) are restored automatically.
+- Strata Video, optional:
+  - `pip install -r video/requirements-ai.txt` (faster-whisper) for Auto Subtitles. The first run
+    downloads the speech model. **I installed it into `video/.venv`** to test it, and the test
+    downloaded the `tiny` model into your Hugging Face cache (`%USERPROFILE%\.cache\huggingface`).
+    The exe leaves it out unless you build with `set STRATA_BUNDLE_AI=1`.
+  - `pip install -r video/requirements-extras.txt` (PySceneDetect + OpenCV) to use PySceneDetect for
+    scene detection; without it the built-in detector is used.
+  - Installing faster-whisper upgraded PyAV in the venv to 19.0.1; all video tests and the exe
+    self-test pass with it.
 
 ### Notes for you
 - Undo/redo: the spec asks for QUndoStack with one command class per action. Strata Video already has a
@@ -47,6 +90,24 @@
   the ground rules I kept it instead of rewriting it.
 - "Overlay tracks": upper video tracks already act as overlay tracks (V2+ are composited over V1, text
   clips live on video tracks), so no separate track type was added.
+- Strata PDF started on Docnet.Core but I switched rendering to PDFiumCore: Docnet ties each open
+  document to one render scale, and closing cached documents crashed PDFium natively in tests.
+  PDFiumCore keeps one document per file and renders at any zoom.
+- Strata PDF annotations stay editable while the document is open; saving writes them into the
+  pages (sticky notes stay real PDF notes), so reopening a saved PDF shows them flattened.
+  Thumbnails show page content without annotations.
+- Auto Subtitles in the packaged exe shows the "install faster-whisper" message unless the exe was
+  built with `STRATA_BUNDLE_AI=1`; from source it works once `requirements-ai.txt` is installed.
+- Strata Video's keyframes are linear; reversed clips decode backwards, which is slower to scrub
+  than forward playback (proxies help for large files).
+
+### Recommended next steps
+1. Review and merge `autonomous-update` into `main`, then run `build-all.bat` on a clean clone.
+2. OCR for Strata PDF (see Blocked).
+3. Adjustment layers in Strata Photo; editable (re-openable) annotations in Strata PDF, e.g. as real
+   PDF annotation objects rather than flattened content.
+4. Bezier easing for Strata Video keyframes and a keyframe lane on the timeline.
+5. Code-sign the exes so Windows SmartScreen stops warning on first launch.
 
 ---
 
