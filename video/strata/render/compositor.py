@@ -46,15 +46,42 @@ def dissolve_duration(seq: Sequence, clip: Clip) -> tuple[float, Optional[Clip]]
     return d, prev
 
 
+def transition_progress(seq: Sequence, clip: Clip, t: float) -> Optional[float]:
+    """0..1 progress of the transition into ``clip`` at ``t`` (None outside it)."""
+    if clip.cross_dissolve <= EPS:
+        return None
+    d, a = dissolve_duration(seq, clip)
+    if a is None or not (clip.start - d / 2 <= t < clip.start + d / 2):
+        return None
+    return (t - (clip.start - d / 2)) / d
+
+
+def wipe_fraction(seq: Sequence, clip: Clip, t: float) -> float:
+    """Visible fraction (from the left) of a clip that is wiping in; 1.0 when not wiping."""
+    if clip.transition != "wipe":
+        return 1.0
+    u = transition_progress(seq, clip, t)
+    return 1.0 if u is None else max(0.0, min(1.0, u))
+
+
 def track_layers(seq: Sequence, track_id: str, t: float) -> list[tuple[Clip, float]]:
-    """Clips to draw for one track at time ``t`` as (clip, alpha) bottom-to-top."""
+    """Clips to draw for one track at time ``t`` as (clip, alpha) bottom-to-top.
+
+    Transitions: a dissolve blends the two clips, a dip to black fades the outgoing clip
+    out and the incoming one in, and a wipe draws both fully opaque while the incoming
+    clip is revealed from the left (see :func:`wipe_fraction`).
+    """
     clips = seq.clips_on(track_id)
     for b in clips:
-        if b.cross_dissolve <= EPS:
+        u = transition_progress(seq, b, t)
+        if u is None:
             continue
         d, a = dissolve_duration(seq, b)
-        if a is not None and b.start - d / 2 <= t < b.start + d / 2:
-            return [(a, 1.0), (b, (t - (b.start - d / 2)) / d)]
+        if b.transition == "dip_black":
+            return [(a, 1.0 - 2 * u)] if u < 0.5 else [(b, 2 * u - 1.0)]
+        if b.transition == "wipe":
+            return [(a, 1.0), (b, 1.0)]
+        return [(a, 1.0), (b, u)]
     c = seq.clip_at(track_id, t)
     if c is None:
         return []
@@ -140,6 +167,21 @@ class Compositor:
     # ----------------------------------------------------------------- drawing
     def _draw_clip(self, p: QPainter, clip: Clip, t: float, alpha: float,
                    out_w: int, out_h: int, fast: bool = False) -> None:
+        wipe = wipe_fraction(self.project.sequence, clip, t)
+        if wipe < 1.0:
+            if wipe <= 0.0:
+                return
+            p.save()
+            p.setClipRect(QRectF(0, 0, out_w * wipe, out_h))
+            try:
+                self._draw_clip_inner(p, clip, t, alpha, out_w, out_h, fast)
+            finally:
+                p.restore()
+            return
+        self._draw_clip_inner(p, clip, t, alpha, out_w, out_h, fast)
+
+    def _draw_clip_inner(self, p: QPainter, clip: Clip, t: float, alpha: float,
+                         out_w: int, out_h: int, fast: bool = False) -> None:
         alpha *= max(0.0, min(1.0, clip.effects.opacity / 100.0)) * _clip_fade(clip, t)
         if alpha <= 1e-3:
             return

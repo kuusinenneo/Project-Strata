@@ -468,15 +468,17 @@ class EditorController(QObject):
         if clip is None or self.is_locked(clip.track_id):
             return False
         visual = clip.kind in ("video", "text")
-        if effect == "cross_dissolve":
+        if effect in ("cross_dissolve", "dip_black", "wipe"):
             target = clip
             if at_time is not None and at_time > clip.start + clip.duration / 2:
                 target = self.seq.next_adjacent(clip) or clip
                 if target is clip:
-                    self.message.emit("Cross dissolve needs a clip right after this one; applied at start")
-            self._push("Add cross dissolve")
+                    self.message.emit("A transition needs a clip right after this one; applied at start")
+            style = {"cross_dissolve": "dissolve"}.get(effect, effect)
+            self._push("Add transition")
             for c in [target] + self.editable(self.seq.linked(target)):
                 c.cross_dissolve = min(1.0, c.duration)
+                c.transition = style
             self.select([target.id])
             self._done()
             return True

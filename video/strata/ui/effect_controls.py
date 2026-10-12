@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (QCheckBox, QColorDialog, QComboBox, QDoubleSpinBo
                                QFormLayout, QGroupBox, QHBoxLayout, QLabel, QPlainTextEdit,
                                QPushButton, QScrollArea, QSlider, QVBoxLayout, QWidget)
 
-from ..model.project import TEXT_PRESETS, Clip, Effects, Transform
+from ..model.project import TEXT_PRESETS, TRANSITIONS, Clip, Effects, Transform
 from .playback import timecode
 
 
@@ -148,7 +148,13 @@ class EffectControls(QWidget):
         f = QFormLayout(self.trans)
         self.fade_in = self._num(f, "Fade in", 0, 30, 0.1, 2, " s", lambda c, v: setattr(c, "fade_in", min(v, c.duration)), linked=True)
         self.fade_out = self._num(f, "Fade out", 0, 30, 0.1, 2, " s", lambda c, v: setattr(c, "fade_out", min(v, c.duration)), linked=True)
-        self.dissolve = self._num(f, "Cross dissolve in", 0, 10, 0.1, 2, " s", lambda c, v: setattr(c, "cross_dissolve", min(v, c.duration)), linked=True)
+        self.dissolve = self._num(f, "Transition in", 0, 10, 0.1, 2, " s", lambda c, v: setattr(c, "cross_dissolve", min(v, c.duration)), linked=True)
+        self.transition = QComboBox()
+        for k, v in TRANSITIONS.items():
+            self.transition.addItem(v, k)
+        self.transition.currentIndexChanged.connect(
+            lambda _: self._apply("transition", lambda c, v: setattr(c, "transition", v), self.transition.currentData(), True))
+        f.addRow("Transition style", self.transition)
 
         # -- Text
         self.text_box = QGroupBox("Text")
@@ -307,6 +313,7 @@ class EffectControls(QWidget):
             w.setValue(v)
         if audio_targets:
             self.volume.setValue(audio_targets[0].volume)
+        self.transition.setCurrentIndex(max(0, self.transition.findData(clip.transition)))
         for cb, v in ((self.animate, tr.animate), (self.bw, fx.black_white), (self.sepia, fx.sepia)):
             cb.blockSignals(True)
             cb.setChecked(v)

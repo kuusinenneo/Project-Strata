@@ -116,7 +116,8 @@ rendering, export and headless UI interactions.
    are mixed together.
 5. **Effects & transitions**: drag items from the Effects tab onto a clip, then fine-tune in
    Effect Controls: scale, position, gradual zoom/pan, opacity, speed, volume, brightness,
-   contrast, saturation, black & white, sepia, blur, fade in/out and cross dissolve.
+   contrast, saturation, black & white, sepia, blur, fade in/out and transitions (cross dissolve,
+   dip to black, wipe — pick the style under *Fades & Transitions*).
 6. **Text**: use the text tool (T), drag a text preset from the Effects tab, or
    *Clip → Add Text at Playhead*. Pick a layout preset (centered title, lower third, top
    caption, subtitle), font, size, colour, background box and fades in Effect Controls.

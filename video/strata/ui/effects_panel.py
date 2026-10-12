@@ -24,6 +24,8 @@ CATALOG = [
     ]),
     ("Transitions", "transition", [
         ("cross_dissolve", "Cross Dissolve"),
+        ("dip_black", "Dip to Black"),
+        ("wipe", "Wipe"),
         ("fade_in", "Fade In"),
         ("fade_out", "Fade Out"),
     ]),

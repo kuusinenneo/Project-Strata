@@ -130,3 +130,25 @@ def test_audio_mix(project):
     assert np.abs(mixer.mix(0.5, 4800, wait=True)).max() == pytest.approx(
         0.5 * np.abs(single).max(), rel=0.02)
     assert np.abs(mixer.mix(5.0, 4800, wait=True)).max() == 0.0  # past the end
+
+
+def test_dip_to_black_and_wipe(qapp, project):
+    p, red, blue, _ = project
+    seq = p.sequence
+    v1 = seq.video_tracks[0].id
+    a = edits.clips_from_media(red, 0, v1, None)[0]  # 0..2
+    b = edits.clips_from_media(blue, 2.0, v1, None)[0]  # 2..7
+    edits.place_clips(seq, [a, b])
+    comp = Compositor(p)
+    b.cross_dissolve = 1.0  # window 1.5..2.5
+    b.transition = "dip_black"
+    assert max(pixel(comp.render(2.0, 320, 180), 160, 90)) < 10  # black in the middle
+    assert pixel(comp.render(1.75, 320, 180), 160, 90)[0] == pytest.approx(127, abs=12)  # red half faded
+    assert pixel(comp.render(2.25, 320, 180), 160, 90)[2] == pytest.approx(127, abs=12)  # blue half in
+    b.transition = "wipe"
+    img = comp.render(2.0, 320, 180)  # halfway: blue on the left, red on the right
+    assert pixel(img, 60, 90)[2] > 200 and pixel(img, 60, 90)[0] < 40
+    assert pixel(img, 260, 90)[0] > 200 and pixel(img, 260, 90)[2] < 40
+    # survives save/load
+    from strata.model.project import Project
+    assert Project.from_dict(p.to_dict()).sequence.clips[b.id].transition == "wipe"

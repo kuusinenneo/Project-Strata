@@ -20,6 +20,12 @@ PROJECT_VERSION = 1
 DEFAULT_IMAGE_DURATION = 5.0
 DEFAULT_TEXT_DURATION = 5.0
 
+TRANSITIONS = {
+    "dissolve": "Cross Dissolve",
+    "dip_black": "Dip to Black",
+    "wipe": "Wipe",
+}
+
 TEXT_PRESETS = {
     "title": "Centered title",
     "lower_third": "Lower third",
@@ -147,7 +153,8 @@ class Clip:
     volume: float = 100.0  # % (0..200)
     fade_in: float = 0.0  # seconds
     fade_out: float = 0.0
-    cross_dissolve: float = 0.0  # seconds; dissolve from the clip that ends where this starts
+    cross_dissolve: float = 0.0  # seconds; transition from the clip that ends where this starts
+    transition: str = "dissolve"  # "dissolve" | "dip_black" | "wipe" (style of that transition)
     link_id: Optional[str] = None
     effects: Effects = field(default_factory=Effects)
     transform: Transform = field(default_factory=Transform)

@@ -21,6 +21,7 @@
 ### Done
 - Video: autosave every 2 minutes + crash recovery on next launch; projects now save as `.strata`
   (old `.strata.json` files still open)
+- Video: Dip to Black and Wipe transitions (Effects panel + transition style in Effect Controls; cross dissolve already existed)
 
 ### In progress
 - (none)
