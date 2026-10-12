@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:panels="using:StrataPhoto.App.ViewModels.Panels"
-             xmlns:theme="using:StrataPhoto.App.Theme"
+             xmlns:theme="using:Strata.Ui"
              x:Class="StrataPhoto.App.Views.Panels.SwatchesPanel"
              x:DataType="panels:SwatchesPanelViewModel">
   <DockPanel Margin="6">

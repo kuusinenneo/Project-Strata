@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:Strata.Ui"
              xmlns:panels="using:StrataPhoto.App.ViewModels.Panels"
              xmlns:views="using:StrataPhoto.App.Views"
              xmlns:controls="using:StrataPhoto.App.Controls"
@@ -27,7 +28,7 @@
           <TextBlock Grid.Column="1" Text="{Binding LayerKind}" Classes="dim small" VerticalAlignment="Bottom" Margin="0,0,0,4" />
         </Grid>
         <TextBox Text="{Binding LayerName, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" Watermark="Layer name" />
-        <controls:ValueSlider Label="Opacity" Minimum="0" Maximum="100" Unit="%" Value="{Binding Opacity}" />
+        <ui:ValueSlider Label="Opacity" Minimum="0" Maximum="100" Unit="%" Value="{Binding Opacity}" />
         <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding BlendModeList}" SelectedItem="{Binding BlendMode}" Focusable="False">
           <ComboBox.ItemTemplate>
             <DataTemplate x:DataType="model:BlendMode">

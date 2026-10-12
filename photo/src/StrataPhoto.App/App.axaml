@@ -22,6 +22,6 @@
   <Application.Styles>
     <FluentTheme />
     <dock:DockFluentTheme />
-    <StyleInclude Source="avares://StrataPhoto/Theme/Styles.axaml" />
+    <StyleInclude Source="avares://Strata.Ui/Styles.axaml" />
   </Application.Styles>
 </Application>

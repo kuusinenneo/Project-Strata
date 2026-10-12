@@ -8,6 +8,7 @@ Both Strata apps take their look from this folder, so they stay visually consist
 | `icons/*.svg` | 24×24 UI and tool icons, drawn with `currentColor` | Strata Photo (tools, panels, actions) |
 | `icons/app/strata-video.*` | Strata Video app logo (`.svg`, `.ico`, 256 px `.png`) | Strata Video exe and window icon |
 | `icons/app/strata-photo.*` | Strata Photo app logo (`.svg`, `.ico`, 256 px `.png`) | Strata Photo exe and window icon |
+| `dotnet/Strata.Ui/` | .NET library for the C# apps: loads `theme.json` into Avalonia/Fluent/Dock resources, the SVG icon loader (`IconView`), shared styles and `ValueSlider` | Strata Photo, Strata PDF |
 | `tools/icon_sources.py` | Path data for every icon (the source of truth) | `tools/make_icons.py` |
 | `tools/make_icons.py` | Writes all SVGs and renders the `.ico`/`.png` app icons | run by hand |
 

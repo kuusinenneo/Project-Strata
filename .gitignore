@@ -229,6 +229,14 @@ __marimo__/
 /photo/**/obj/
 /photo/publish/
 /photo/TestResults/
+/shared/dotnet/**/bin/
+/shared/dotnet/**/obj/
+/pdf/**/bin/
+/pdf/**/obj/
+/pdf/publish/
+/launcher/**/bin/
+/launcher/**/obj/
+/launcher/publish/
 !/photo/src/StrataPhoto.App/app.manifest
 *.user
 .vs/

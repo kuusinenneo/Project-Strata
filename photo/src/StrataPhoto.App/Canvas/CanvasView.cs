@@ -7,7 +7,7 @@ using Avalonia.Rendering.SceneGraph;
 using Avalonia.Skia;
 using Avalonia.Threading;
 using SkiaSharp;
-using StrataPhoto.App.Theme;
+using Strata.Ui;
 using StrataPhoto.App.ViewModels;
 using StrataPhoto.Core.Editing;
 using StrataPhoto.Core.Tools;

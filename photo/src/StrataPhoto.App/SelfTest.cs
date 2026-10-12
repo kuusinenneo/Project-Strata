@@ -46,7 +46,7 @@ internal static class SelfTest
 
         static Task Frame() => Task.Delay(120);
 
-        await Step("theme", () => Task.FromResult<object?>(Theme.SharedTheme.SharedFolder));
+        await Step("theme", () => Task.FromResult<object?>(Strata.Ui.SharedTheme.SharedFolder));
 
         DocumentViewModel? d = null;
         await Step("new_document", async () =>

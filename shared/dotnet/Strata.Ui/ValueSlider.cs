@@ -5,7 +5,7 @@ using Avalonia.Data;
 using Avalonia.Layout;
 using Avalonia.Media;
 
-namespace StrataPhoto.App.Controls;
+namespace Strata.Ui;
 
 /// <summary>Label + slider + numeric box bound to one value (used in the options bar and panels).</summary>
 public sealed class ValueSlider : UserControl

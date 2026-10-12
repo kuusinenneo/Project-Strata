@@ -8,7 +8,7 @@ using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using SkiaSharp;
 using StrataPhoto.App.Controls;
-using StrataPhoto.App.Theme;
+using Strata.Ui;
 using StrataPhoto.App.ViewModels;
 using StrataPhoto.Core.IO;
 using StrataPhoto.Core.Model;

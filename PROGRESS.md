@@ -27,6 +27,7 @@
 - Video: reverse playback for clips (video + linked audio; Effect Controls checkbox and Effects-panel item). Slow motion / fast forward already existed (0.1x-16x)
 - Video: export presets (YouTube 1080p, TikTok/Reels/Shorts 1080x1920, Instagram square 1080x1080) and fixed-frame resolutions; progress bar and cancel already existed
 - Video: background 540p proxy generation for 4K+ footage, used by the monitors (toggle in Playback menu); export always uses originals
+- Shared: moved Strata Photo's theme loader, icon loader, styles and ValueSlider into shared/dotnet/Strata.Ui so Strata PDF can reuse them (Photo unchanged in behaviour; tests + self-test + published build verified)
 
 ### In progress
 - (none)

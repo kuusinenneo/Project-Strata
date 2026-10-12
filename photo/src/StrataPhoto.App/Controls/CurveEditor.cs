@@ -3,7 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using SkiaSharp;
-using StrataPhoto.App.Theme;
+using Strata.Ui;
 using StrataPhoto.Core.Operations;
 
 namespace StrataPhoto.App.Controls;

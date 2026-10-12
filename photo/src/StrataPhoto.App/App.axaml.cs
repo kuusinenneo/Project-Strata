@@ -1,7 +1,7 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using StrataPhoto.App.Theme;
+using Strata.Ui;
 using StrataPhoto.App.ViewModels;
 using StrataPhoto.App.Views;
 
@@ -11,6 +11,7 @@ public partial class App : Application
 {
     public override void Initialize()
     {
+        Icons.LoadFailed += CrashLog.Write;
         SharedTheme.Load();
         AvaloniaXamlLoader.Load(this);
         SharedTheme.Apply(Resources);

@@ -5,7 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Documents;
 using Avalonia.Media;
 
-namespace StrataPhoto.App.Theme;
+namespace Strata.Ui;
 
 /// <summary>One &lt;path&gt; of a shared icon.</summary>
 public sealed record IconPath(Geometry Geometry, bool Filled, double StrokeWidth, double Opacity);
@@ -16,6 +16,9 @@ public sealed record IconPath(Geometry Geometry, bool Filled, double StrokeWidth
 public static class Icons
 {
     private static readonly Dictionary<string, IReadOnlyList<IconPath>> Cache = new();
+
+    /// <summary>Raised when an icon file can't be read (apps log it).</summary>
+    public static event Action<Exception>? LoadFailed;
 
     public static IReadOnlyList<IconPath> Get(string name)
     {
@@ -46,7 +49,7 @@ public static class Icons
         }
         catch (Exception ex)
         {
-            CrashLog.Write(new InvalidDataException($"Icon '{name}' could not be loaded", ex));
+            LoadFailed?.Invoke(new InvalidDataException($"Icon '{name}' could not be loaded", ex));
             return Array.Empty<IconPath>();
         }
     }

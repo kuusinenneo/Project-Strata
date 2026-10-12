@@ -1,6 +1,6 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:theme="using:StrataPhoto.App.Theme">
+        xmlns:theme="using:Strata.Ui">
 
   <!-- Compact, dark, Strata-styled controls (colours come from shared/theme.json via SharedTheme). -->
 

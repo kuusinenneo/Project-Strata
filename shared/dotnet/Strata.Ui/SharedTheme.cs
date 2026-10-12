@@ -4,10 +4,10 @@ using Avalonia.Controls;
 using Avalonia.Media;
 using SkiaSharp;
 
-namespace StrataPhoto.App.Theme;
+namespace Strata.Ui;
 
 /// <summary>
-/// The Strata design system from <c>shared/theme.json</c> (copied next to the exe at build time).
+/// The Strata design system from <c>shared/theme.json</c> for the .NET apps (Strata Photo, Strata PDF) (copied next to the exe at build time).
 /// Colours become resources named <c>Strata.&lt;name&gt;</c> (Color) and <c>Strata.&lt;name&gt;Brush</c>, and
 /// are also mapped onto the Fluent and Dock theme resources so stock controls match Strata Video.
 /// </summary>

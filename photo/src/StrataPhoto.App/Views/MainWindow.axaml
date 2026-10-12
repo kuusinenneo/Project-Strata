@@ -3,7 +3,7 @@
         xmlns:vm="using:StrataPhoto.App.ViewModels"
         xmlns:views="using:StrataPhoto.App.Views"
         xmlns:controls="using:StrataPhoto.App.Controls"
-        xmlns:theme="using:StrataPhoto.App.Theme"
+        xmlns:theme="using:Strata.Ui"
         xmlns:dockc="using:Dock.Avalonia.Controls"
         xmlns:recycling="using:Avalonia.Controls.Recycling"
         x:Class="StrataPhoto.App.Views.MainWindow"

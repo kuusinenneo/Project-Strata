@@ -1,8 +1,9 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:Strata.Ui"
              xmlns:panels="using:StrataPhoto.App.ViewModels.Panels"
              xmlns:controls="using:StrataPhoto.App.Controls"
-             xmlns:theme="using:StrataPhoto.App.Theme"
+             xmlns:theme="using:Strata.Ui"
              x:Class="StrataPhoto.App.Views.Panels.ColorPanel"
              x:DataType="panels:ColorPanelViewModel">
   <ScrollViewer>
@@ -26,9 +27,9 @@
         <controls:HueSlider Height="16" Hue="{Binding Hue}" />
       </StackPanel>
       <StackPanel Grid.Row="1" Grid.ColumnSpan="3" Spacing="4" Margin="0,10,0,0">
-        <controls:ValueSlider Label="R" Minimum="0" Maximum="255" Value="{Binding Red}" Compact="True" />
-        <controls:ValueSlider Label="G" Minimum="0" Maximum="255" Value="{Binding Green}" Compact="True" />
-        <controls:ValueSlider Label="B" Minimum="0" Maximum="255" Value="{Binding Blue}" Compact="True" />
+        <ui:ValueSlider Label="R" Minimum="0" Maximum="255" Value="{Binding Red}" Compact="True" />
+        <ui:ValueSlider Label="G" Minimum="0" Maximum="255" Value="{Binding Green}" Compact="True" />
+        <ui:ValueSlider Label="B" Minimum="0" Maximum="255" Value="{Binding Blue}" Compact="True" />
         <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">
           <TextBlock Text="#" VerticalAlignment="Center" />
           <TextBox Width="90" Text="{Binding Hex, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" MaxLength="7" />

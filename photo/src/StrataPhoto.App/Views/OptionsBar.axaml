@@ -1,9 +1,10 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:Strata.Ui"
              xmlns:vm="using:StrataPhoto.App.ViewModels"
              xmlns:views="using:StrataPhoto.App.Views"
              xmlns:controls="using:StrataPhoto.App.Controls"
-             xmlns:theme="using:StrataPhoto.App.Theme"
+             xmlns:theme="using:Strata.Ui"
              x:Class="StrataPhoto.App.Views.OptionsBar"
              x:DataType="vm:MainViewModel">
   <UserControl.Styles>
@@ -12,7 +13,7 @@
       <Setter Property="Spacing" Value="10" />
       <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
-    <Style Selector="controls|ValueSlider">
+    <Style Selector="ui|ValueSlider">
       <Setter Property="SliderWidth" Value="90" />
       <Setter Property="Compact" Value="True" />
     </Style>
@@ -26,13 +27,13 @@
 
     <!-- brush, eraser, clone stamp -->
     <StackPanel Classes="group" IsVisible="{Binding Tools.IsBrushTool}">
-      <controls:ValueSlider Label="Size" Minimum="1" Maximum="1000" Unit="px"
+      <ui:ValueSlider Label="Size" Minimum="1" Maximum="1000" Unit="px"
                             Value="{Binding Tools.ActiveBrush.Size, Converter={x:Static views:FloatConverter.Instance}}" />
-      <controls:ValueSlider Label="Hardness" Minimum="0" Maximum="100" Unit="%"
+      <ui:ValueSlider Label="Hardness" Minimum="0" Maximum="100" Unit="%"
                             Value="{Binding Tools.ActiveBrush.Hardness, Converter={x:Static views:PercentConverter.Instance}}" />
-      <controls:ValueSlider Label="Opacity" Minimum="1" Maximum="100" Unit="%"
+      <ui:ValueSlider Label="Opacity" Minimum="1" Maximum="100" Unit="%"
                             Value="{Binding Tools.ActiveBrush.Opacity, Converter={x:Static views:PercentConverter.Instance}}" />
-      <controls:ValueSlider Label="Flow" Minimum="1" Maximum="100" Unit="%"
+      <ui:ValueSlider Label="Flow" Minimum="1" Maximum="100" Unit="%"
                             Value="{Binding Tools.ActiveBrush.Flow, Converter={x:Static views:PercentConverter.Instance}}" />
       <ToggleButton Classes="icon" Width="NaN" Padding="6,2" Focusable="False" IsChecked="{Binding Tools.ActiveBrush.PressureSize}"
                     ToolTip.Tip="Pen pressure controls size">
@@ -65,10 +66,10 @@
           <theme:IconView Icon="close" />
         </ToggleButton>
       </StackPanel>
-      <controls:ValueSlider Label="Feather" Minimum="0" Maximum="250" Unit="px" IsVisible="{Binding !Tools.IsWandTool}"
+      <ui:ValueSlider Label="Feather" Minimum="0" Maximum="250" Unit="px" IsVisible="{Binding !Tools.IsWandTool}"
                             Value="{Binding Tools.Settings.Feather, Converter={x:Static views:FloatConverter.Instance}}" />
       <StackPanel Classes="group" IsVisible="{Binding Tools.IsWandTool}">
-        <controls:ValueSlider Label="Tolerance" Minimum="0" Maximum="255"
+        <ui:ValueSlider Label="Tolerance" Minimum="0" Maximum="255"
                               Value="{Binding Tools.Settings.WandTolerance, Converter={x:Static views:FloatConverter.Instance}}" />
         <CheckBox Content="Anti-alias" IsChecked="{Binding Tools.Settings.WandAntiAlias}" Focusable="False" />
         <CheckBox Content="Contiguous" IsChecked="{Binding Tools.Settings.WandContiguous}" Focusable="False" />
@@ -81,9 +82,9 @@
 
     <!-- paint bucket -->
     <StackPanel Classes="group" IsVisible="{Binding Tools.IsFillTool}">
-      <controls:ValueSlider Label="Tolerance" Minimum="0" Maximum="255"
+      <ui:ValueSlider Label="Tolerance" Minimum="0" Maximum="255"
                             Value="{Binding Tools.Settings.FillTolerance, Converter={x:Static views:FloatConverter.Instance}}" />
-      <controls:ValueSlider Label="Opacity" Minimum="1" Maximum="100" Unit="%"
+      <ui:ValueSlider Label="Opacity" Minimum="1" Maximum="100" Unit="%"
                             Value="{Binding Tools.Settings.FillOpacity, Converter={x:Static views:PercentConverter.Instance}}" />
       <CheckBox Content="Contiguous" IsChecked="{Binding Tools.Settings.FillContiguous}" Focusable="False" />
       <CheckBox Content="All layers" IsChecked="{Binding Tools.Settings.SampleAllLayers}" Focusable="False" />
@@ -101,7 +102,7 @@
           <TextBlock Text="Radial" FontSize="11" />
         </ToggleButton>
       </StackPanel>
-      <controls:ValueSlider Label="Opacity" Minimum="1" Maximum="100" Unit="%"
+      <ui:ValueSlider Label="Opacity" Minimum="1" Maximum="100" Unit="%"
                             Value="{Binding Tools.Settings.GradientOpacity, Converter={x:Static views:PercentConverter.Instance}}" />
       <CheckBox Content="Reverse" IsChecked="{Binding Tools.Settings.GradientReverse}" Focusable="False" />
       <CheckBox Content="Foreground to transparent" IsChecked="{Binding Tools.Settings.GradientToTransparent}" Focusable="False" />
@@ -110,7 +111,7 @@
     <!-- shapes -->
     <StackPanel Classes="group" IsVisible="{Binding Tools.IsShapeTool}">
       <CheckBox Content="Fill" IsChecked="{Binding Tools.Settings.ShapeFill}" Focusable="False" />
-      <controls:ValueSlider Label="Stroke" Minimum="1" Maximum="200" Unit="px"
+      <ui:ValueSlider Label="Stroke" Minimum="1" Maximum="200" Unit="px"
                             Value="{Binding Tools.Settings.ShapeStrokeWidth, Converter={x:Static views:FloatConverter.Instance}}" />
       <TextBlock Classes="dim small" Text="Shapes are drawn in the foreground colour on a new layer." VerticalAlignment="Center" />
     </StackPanel>

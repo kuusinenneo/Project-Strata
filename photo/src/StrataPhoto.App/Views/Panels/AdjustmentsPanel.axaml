@@ -3,7 +3,7 @@
              xmlns:panels="using:StrataPhoto.App.ViewModels.Panels"
              xmlns:vm="using:StrataPhoto.App.ViewModels"
              xmlns:controls="using:StrataPhoto.App.Controls"
-             xmlns:theme="using:StrataPhoto.App.Theme"
+             xmlns:theme="using:Strata.Ui"
              x:Class="StrataPhoto.App.Views.Panels.AdjustmentsPanel"
              x:DataType="panels:AdjustmentsPanelViewModel">
   <Panel Margin="6">

@@ -25,12 +25,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\StrataPhoto.Core\StrataPhoto.Core.csproj" />
+    <ProjectReference Include="..\..\..\shared\dotnet\Strata.Ui\Strata.Ui.csproj" />
   </ItemGroup>
 
-  <!-- The shared design system (theme.json + icons) is copied next to the exe. -->
+  <!-- theme.json and the icons come with Strata.Ui; the app logo is copied here. -->
   <ItemGroup>
-    <None Include="..\..\..\shared\theme.json" Link="shared\theme.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <None Include="..\..\..\shared\icons\*.svg" Link="shared\icons\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <None Include="..\..\..\shared\icons\app\strata-photo.png" Link="shared\icons\app\strata-photo.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <None Include="..\..\..\shared\icons\app\strata-photo.ico" Link="shared\icons\app\strata-photo.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>

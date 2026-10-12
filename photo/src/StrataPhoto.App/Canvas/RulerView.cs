@@ -3,7 +3,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
-using StrataPhoto.App.Theme;
+using Strata.Ui;
 using StrataPhoto.App.ViewModels;
 
 namespace StrataPhoto.App.Canvas;

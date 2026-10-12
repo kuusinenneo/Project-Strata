@@ -13,6 +13,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StrataPhoto.Tests", "tests\StrataPhoto.Tests\StrataPhoto.Tests.csproj", "{BC596FA1-AA5A-4482-8CF0-FAE3D4B2846A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Strata.Ui", "..\shared\dotnet\Strata.Ui\Strata.Ui.csproj", "{D042DD43-D75D-46B0-A17F-AE6034EB7561}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -59,6 +61,18 @@ Global
 		{BC596FA1-AA5A-4482-8CF0-FAE3D4B2846A}.Release|x64.Build.0 = Release|Any CPU
 		{BC596FA1-AA5A-4482-8CF0-FAE3D4B2846A}.Release|x86.ActiveCfg = Release|Any CPU
 		{BC596FA1-AA5A-4482-8CF0-FAE3D4B2846A}.Release|x86.Build.0 = Release|Any CPU
+		{D042DD43-D75D-46B0-A17F-AE6034EB7561}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D042DD43-D75D-46B0-A17F-AE6034EB7561}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D042DD43-D75D-46B0-A17F-AE6034EB7561}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D042DD43-D75D-46B0-A17F-AE6034EB7561}.Debug|x64.Build.0 = Debug|Any CPU
+		{D042DD43-D75D-46B0-A17F-AE6034EB7561}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D042DD43-D75D-46B0-A17F-AE6034EB7561}.Debug|x86.Build.0 = Debug|Any CPU
+		{D042DD43-D75D-46B0-A17F-AE6034EB7561}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D042DD43-D75D-46B0-A17F-AE6034EB7561}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D042DD43-D75D-46B0-A17F-AE6034EB7561}.Release|x64.ActiveCfg = Release|Any CPU
+		{D042DD43-D75D-46B0-A17F-AE6034EB7561}.Release|x64.Build.0 = Release|Any CPU
+		{D042DD43-D75D-46B0-A17F-AE6034EB7561}.Release|x86.ActiveCfg = Release|Any CPU
+		{D042DD43-D75D-46B0-A17F-AE6034EB7561}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
