@@ -6,10 +6,17 @@ import os
 
 from .project import Project
 
-PROJECT_EXTENSION = ".strata.json"
+PROJECT_EXTENSION = ".strata"
+LEGACY_EXTENSIONS = (".strata.json", ".json")  # still opened
 
 
 def save_project(project: Project, path: str) -> None:
+    write_project_file(project, path)
+    project.path = path
+
+
+def write_project_file(project: Project, path: str) -> None:
+    """Write the project as JSON without changing ``project.path`` (used by autosave too)."""
     data = project.to_dict()
     base = os.path.dirname(os.path.abspath(path))
     # Store paths relative to the project file too, so projects survive being moved
@@ -23,7 +30,6 @@ def save_project(project: Project, path: str) -> None:
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
     os.replace(tmp, path)
-    project.path = path
 
 
 def load_project(path: str) -> Project:

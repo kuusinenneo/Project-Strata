@@ -21,7 +21,7 @@ Project-Strata\
 
 - **File Explorer:** open `Project-Strata\video\dist\StrataVideo` and double-click **StrataVideo.exe**.
 - **PowerShell** (from the `video` folder): `.\dist\StrataVideo\StrataVideo.exe`
-- **Open a project directly:** `.\dist\StrataVideo\StrataVideo.exe path\to\project.strata.json`
+- **Open a project directly:** `.\dist\StrataVideo\StrataVideo.exe path\to\project.strata`
 - **Shortcut:** right-click `StrataVideo.exe` → *Show more options* → *Send to* → *Desktop
   (create shortcut)*, or *Pin to Start* / *Pin to taskbar*.
 
@@ -59,7 +59,7 @@ pip install -r requirements.txt
 ```powershell
 # from the video folder
 python main.py                    # or: python -m strata
-python main.py path\to\project.strata.json   # open a project directly
+python main.py path\to\project.strata   # open a project directly
 ```
 
 ## Build a Windows app (.exe)

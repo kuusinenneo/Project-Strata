@@ -101,6 +101,15 @@ class EditorController(QObject):
         from ..model.io import missing_media
         return missing_media(proj)
 
+    def recover_project(self, autosave_path: str, original_path) -> list[str]:
+        """Load an autosaved copy after a crash; it stays unsaved until the user saves it."""
+        missing = self.open_project(autosave_path)
+        self.project.path = original_path
+        self.undo.clean_state = -1  # recovered work counts as unsaved
+        self.project_replaced.emit()
+        self.history_changed.emit()
+        return missing
+
     def save_project(self, path: str) -> None:
         save_project(self.project, path)
         self.undo.mark_clean()

@@ -1,5 +1,44 @@
 # Project Strata — Progress
 
+## Autonomous update (branch `autonomous-update`)
+
+### What existed before this run
+- **Strata Video** (`video/`, Python + PySide6 + FFmpeg): dockable Premiere-style UI (Source/Program
+  monitors, Project/Effects panels, timeline, tools, meters); unlimited video/audio tracks with
+  lock/solo/mute; insert/overwrite, move, trim by dragging edges, razor (C), ripple delete, snapping;
+  snapshot-based undo/redo (Ctrl+Z / Ctrl+Shift+Z) for every edit; JSON projects; J/K/L, Space, I/O,
+  V/C/B/T shortcuts; per-clip volume, fades, cross dissolve, scale/position with a start→end zoom/pan,
+  brightness/contrast/saturation/B&W/sepia/blur/opacity, speed (forward only); text overlays with
+  presets; waveforms; linked audio/video with unlink; MP4 export dialog with progress and cancel;
+  PyInstaller build with self-test. 51 tests.
+- **Strata Photo** (`photo/`, C# .NET 10 + Avalonia + SkiaSharp + Dock): everything in Priority 2 already
+  exists (undo + History panel, full Layers panel with 17 blend modes, masks, groups, `.sphoto` projects,
+  PNG/JPG/WebP export, all selection tools + paste to new layer, crop/resize/canvas/rotate/flip,
+  8 adjustments incl. curves, brush/eraser with size/hardness/opacity/flow/pressure, text tool,
+  all listed shortcuts). 53 unit tests + `--self-test`.
+- **Shared** (`shared/`): theme.json, SVG icons, app logos.
+
+### Done
+- Video: autosave every 2 minutes + crash recovery on next launch; projects now save as `.strata`
+  (old `.strata.json` files still open)
+
+### In progress
+- (none)
+
+### Blocked
+- (none)
+
+### Notes for you
+- Undo/redo: the spec asks for QUndoStack with one command class per action. Strata Video already has a
+  working, tested snapshot undo stack covering every edit (cut, move, trim, delete, add, effects), so per
+  the ground rules I kept it instead of rewriting it.
+- "Overlay tracks": upper video tracks already act as overlay tracks (V2+ are composited over V1, text
+  clips live on video tracks), so no separate track type was added.
+
+---
+
+## Earlier work
+
 Spec: [PHOTO_SPEC.md](PHOTO_SPEC.md). Strata Video's own history: [video/PROGRESS.md](video/PROGRESS.md).
 
 ## Phase 1: restructure the repo — done

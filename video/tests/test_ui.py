@@ -11,6 +11,7 @@ from strata.ui.timeline import RULER_H
 @pytest.fixture
 def win(qapp, media_dir, tmp_path, monkeypatch):
     monkeypatch.setenv("APPDATA", str(tmp_path))  # keep QSettings out of the real profile
+    monkeypatch.setenv("STRATA_AUTOSAVE_DIR", str(tmp_path / "autosave"))
     from strata.ui.main_window import MainWindow
     from strata.ui.theme import apply_dark_theme
     apply_dark_theme(qapp)
@@ -428,3 +429,46 @@ def test_async_monitor_rendering(win, media_dir, qapp):
     assert got and win.program.view.image is not None
     exact = win.program.render_frame(c.playhead)
     assert win.program.view.image.convertToFormat(exact.format()) == exact
+
+
+def test_autosave_and_crash_recovery(win, media_dir, tmp_path):
+    from strata.model.autosave import AutosaveManager
+    c = win.controller
+    assert not win.autosave_now()  # nothing to save yet
+    (vid,) = media(win, media_dir, "video.mp4")
+    c.add_media_to_timeline([vid.id], None, 0.0)
+    assert win.autosave_now()
+    assert not win.autosave_now()  # unchanged since the last autosave
+    # Pretend the autosave belongs to a session that crashed (a pid that isn't running).
+    crashed = AutosaveManager(win.autosave.folder, pid=999_999_991)
+    os.replace(win.autosave.project_file, crashed.project_file)
+    os.replace(win.autosave.meta_file, crashed.meta_file)
+    import json
+    meta = json.load(open(crashed.meta_file)); meta["pid"] = crashed.pid
+    json.dump(meta, open(crashed.meta_file, "w"))
+    c.new_project()
+    assert not c.project.sequence.clips
+    from PySide6.QtWidgets import QMessageBox
+    import strata.ui.main_window as mw
+    orig = mw.QMessageBox.question
+    mw.QMessageBox.question = staticmethod(lambda *a, **k: QMessageBox.Yes)
+    try:
+        assert win.check_recovery()
+    finally:
+        mw.QMessageBox.question = orig
+    assert len(c.project.sequence.clips) == 2
+    assert c.undo.is_dirty()  # recovered work must be saved explicitly
+    assert win.autosave.find_recoverable() == []
+
+
+def test_save_uses_strata_extension(win, media_dir, tmp_path):
+    from strata.model.io import PROJECT_EXTENSION
+    assert PROJECT_EXTENSION == ".strata"
+    c = win.controller
+    (vid,) = media(win, media_dir, "video.mp4")
+    c.add_media_to_timeline([vid.id], None, 0.0)
+    path = str(tmp_path / ("p" + PROJECT_EXTENSION))
+    assert win._save_to(path)
+    c.new_project()
+    assert c.open_project(path) == []
+    assert len(c.project.sequence.clips) == 2

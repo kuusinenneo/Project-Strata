@@ -12,9 +12,10 @@ from PySide6.QtWidgets import (QComboBox, QDialog, QDialogButtonBox, QDockWidget
 
 from .. import APP_NAME, __version__
 from ..media.ffmpeg import ffmpeg_version, find_ffmpeg
+from ..model.autosave import AutosaveManager
 from ..model.io import PROJECT_EXTENSION
 from ..render.mixer import AudioMixer
-from ..resources import app_icon_path
+from ..resources import app_icon_path, user_data_dir
 from .controller import EditorController
 from .effect_controls import EffectControls
 from .effects_panel import EffectsPanel
@@ -27,7 +28,8 @@ from .project_panel import ProjectPanel
 from .timeline import TimelinePanel
 from .tools_panel import ToolsPanel
 
-PROJECT_FILTER = f"Strata project (*{PROJECT_EXTENSION} *.json)"
+AUTOSAVE_INTERVAL_MS = 2 * 60 * 1000
+PROJECT_FILTER = f"Strata Video project (*{PROJECT_EXTENSION} *.strata.json *.json)"
 
 SHORTCUTS_HELP = """
 <h3>Tools</h3>
@@ -186,6 +188,15 @@ class MainWindow(QMainWindow):
         geo = self.settings.value("geometry")
         if geo is not None:
             self.restoreGeometry(geo)
+
+        # Autosave every couple of minutes while there are unsaved changes.
+        self.autosave = AutosaveManager(os.environ.get("STRATA_AUTOSAVE_DIR")
+                                        or str(user_data_dir() / "autosave"))
+        self._autosaved_state = None
+        self.autosave_timer = QTimer(self)
+        self.autosave_timer.setInterval(AUTOSAVE_INTERVAL_MS)
+        self.autosave_timer.timeout.connect(self.autosave_now)
+        self.autosave_timer.start()
 
     # ------------------------------------------------------------------ docks
     def _dock(self, title: str, widget: QWidget, name: str) -> QDockWidget:
@@ -392,6 +403,46 @@ class MainWindow(QMainWindow):
         else:
             self.controller.delete_selection()
 
+    # ------------------------------------------------------------------ autosave / recovery
+    def autosave_now(self) -> bool:
+        """Write an autosave if the project changed since the last one."""
+        undo = self.controller.undo
+        if not undo.is_dirty() or undo.state == self._autosaved_state:
+            return False
+        try:
+            self.autosave.save(self.controller.project)
+        except Exception as exc:  # never interrupt editing because of autosave
+            self.controller.message.emit(f"Autosave failed: {exc}")
+            return False
+        self._autosaved_state = undo.state
+        self.controller.message.emit("Autosaved")
+        return True
+
+    def check_recovery(self) -> bool:
+        """Offer to restore work from a session that crashed. Returns True if recovered."""
+        for cand in self.autosave.find_recoverable():
+            r = QMessageBox.question(
+                self, "Recover unsaved work",
+                f"{APP_NAME} did not close properly last time.\n\nRecover {cand.describe()}?",
+                QMessageBox.Yes | QMessageBox.No)
+            if r != QMessageBox.Yes:
+                self.autosave.discard(cand)
+                continue
+            try:
+                missing = self.controller.recover_project(cand.project_file, cand.original_path)
+            except Exception as exc:
+                QMessageBox.critical(self, "Recover", f"Could not recover the project:\n{exc}")
+                self.autosave.discard(cand)
+                continue
+            self.autosave.discard(cand)
+            self.autosave_now()  # keep protecting the recovered work under this session
+            if missing:
+                QMessageBox.warning(self, "Missing media",
+                                    "These files could not be found and will show as offline:\n\n" + "\n".join(missing))
+            self.controller.message.emit("Recovered unsaved work — save it to keep it")
+            return True
+        return False
+
     # ------------------------------------------------------------------ project files
     def maybe_save(self) -> bool:
         if not self.controller.undo.is_dirty():
@@ -438,7 +489,7 @@ class MainWindow(QMainWindow):
                                               PROJECT_FILTER)
         if not path:
             return False
-        if not path.lower().endswith(".json"):
+        if not path.lower().endswith((PROJECT_EXTENSION, ".json")):
             path += PROJECT_EXTENSION
         return self._save_to(path)
 
@@ -449,6 +500,8 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Save project", f"Could not save project:\n{exc}")
             return False
         self.settings.setValue("last_dir", os.path.dirname(path))
+        self.autosave.clear()
+        self._autosaved_state = self.controller.undo.state
         self._update_title()
         self.controller.message.emit(f"Saved {path}")
         return True
@@ -503,4 +556,6 @@ class MainWindow(QMainWindow):
         self.source.shutdown()
         self.audio.stop()
         self.settings.setValue("geometry", self.saveGeometry())
+        self.autosave_timer.stop()
+        self.autosave.clear()  # clean exit: nothing to recover next time
         e.accept()

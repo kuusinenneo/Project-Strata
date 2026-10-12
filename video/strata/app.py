@@ -72,9 +72,10 @@ def main(argv: list[str] | None = None) -> int:
     apply_dark_theme(app)
     win = MainWindow()
     win.show()
-    # Open a project passed on the command line: StrataVideo.exe myproject.strata.json
+    recovered = win.check_recovery()
+    # Open a project passed on the command line: StrataVideo.exe myproject.strata
     for arg in argv[1:]:
-        if arg.lower().endswith(".json") and os.path.isfile(arg):
+        if not recovered and arg.lower().endswith((".strata", ".json")) and os.path.isfile(arg):
             win.open_project(arg)
             break
     return app.exec()
