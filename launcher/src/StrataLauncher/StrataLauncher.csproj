@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>StrataLauncher</RootNamespace>
+    <AssemblyName>Strata</AssemblyName>
+    <AssemblyTitle>Strata</AssemblyTitle>
+    <ApplicationIcon>..\..\..\shared\icons\app\strata-suite.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.22" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\shared\dotnet\Strata.Ui\Strata.Ui.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\shared\icons\app\strata-*.png" Link="shared\icons\app\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <AvaloniaResource Include="..\..\..\shared\icons\app\strata-suite.ico" Link="Assets\strata-suite.ico" />
+  </ItemGroup>
+</Project>

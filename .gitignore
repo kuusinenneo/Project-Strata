@@ -221,6 +221,7 @@ __marimo__/
 
 # Strata Video packaging (PyInstaller output; strata.spec is tracked)
 /video/build/
+/dist/
 /video/dist/
 !strata.spec
 
