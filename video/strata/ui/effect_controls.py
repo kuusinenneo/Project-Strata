@@ -153,6 +153,9 @@ class EffectControls(QWidget):
         self.speed = SliderSpin(0.1, 16, 0.1, 2, " ×", slider=False)
         self.speed.valueChanged.connect(self._set_speed)
         f.addRow("Speed", self.speed)
+        self.reverse = QCheckBox("Reverse (play backwards)")
+        self.reverse.toggled.connect(self._set_reverse)
+        f.addRow(self.reverse)
 
         # -- Colour
         self.color = QGroupBox("Color && Blur")
@@ -348,6 +351,10 @@ class EffectControls(QWidget):
         if c.kind == "audio":
             c.volume = v
 
+    def _set_reverse(self, on: bool) -> None:
+        if not self._loading and self.clip_id:
+            self.controller.set_reverse(self.clip_id, on)
+
     def _set_speed(self, v: float) -> None:
         if not self._loading and self.clip_id:
             self.controller.set_speed(self.clip_id, v)
@@ -407,6 +414,8 @@ class EffectControls(QWidget):
         self.basic.setVisible(True)
         self.opacity.setEnabled(visual)
         self.speed.setEnabled(clip.kind != "text" and not (media and media.is_still))
+        self.reverse.setEnabled(self.speed.isEnabled())
+        self.reverse.setChecked(clip.reverse)
         self.color.setVisible(visual and clip.kind != "text")
         self.audio.setVisible(bool(audio_targets))
         self.trans.setVisible(True)

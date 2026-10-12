@@ -122,6 +122,7 @@ rendering, export and headless UI interactions.
    and opacity at the playhead. Once a clip has keyframes, changing any of those values sets it
    at the playhead; ◀ ▶ jump between keyframes (shown as diamonds on the clip).
    **LUTs:** Color & Blur → *LUT → Load…* applies a 3D `.cube` LUT, with a strength slider.
+   **Speed:** 0.1×–16× under *Opacity & Time*, plus *Reverse* to play a clip (and its linked audio) backwards.
 6. **Text**: use the text tool (T), drag a text preset from the Effects tab, or
    *Clip → Add Text at Playhead*. Pick a layout preset (centered title, lower third, top
    caption, subtitle), font, size, colour, background box and fades in Effect Controls.

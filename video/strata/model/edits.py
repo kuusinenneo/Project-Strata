@@ -78,9 +78,37 @@ def _move_start_keep_content(clip: Clip, new_start: float) -> None:
     clip.start = new_start
 
 
+def cut_head(clip: Clip, t: float) -> None:
+    """Drop the part of ``clip`` before timeline time ``t`` (content stays anchored)."""
+    src = clip.source_time(t)
+    if clip.reverse:
+        clip.out_point = src
+    else:
+        clip.in_point = src
+    _move_start_keep_content(clip, t)
+
+
+def cut_tail(clip: Clip, t: float) -> None:
+    """Drop the part of ``clip`` after timeline time ``t``."""
+    src = clip.source_time(t)
+    if clip.reverse:
+        clip.in_point = src
+    else:
+        clip.out_point = src
+
+
 def trim_start(clip: Clip, new_start: float, project: Optional[Project] = None) -> None:
     """Move the left edge of ``clip`` to ``new_start`` (content stays anchored)."""
     new_start = max(0.0, min(new_start, clip.end - MIN_CLIP_DURATION))
+    if clip.reverse:  # the left edge shows the end of the source range
+        new_out = clip.out_point + (clip.start - new_start) * clip.speed
+        limit = source_limit(clip, project)
+        if new_out > limit:
+            new_start = clip.start - (limit - clip.out_point) / clip.speed
+            new_out = limit
+        _move_start_keep_content(clip, new_start)
+        clip.out_point = new_out
+        return
     new_in = clip.in_point + (new_start - clip.start) * clip.speed
     if new_in < 0 and not is_unbounded(clip, project):
         new_in = 0.0
@@ -95,6 +123,9 @@ def trim_start(clip: Clip, new_start: float, project: Optional[Project] = None) 
 
 def trim_end(clip: Clip, new_end: float, project: Optional[Project] = None) -> None:
     new_end = max(new_end, clip.start + MIN_CLIP_DURATION)
+    if clip.reverse:  # the right edge shows the start of the source range
+        clip.in_point = max(0.0, clip.out_point - (new_end - clip.start) * clip.speed)
+        return
     new_out = clip.in_point + (new_end - clip.start) * clip.speed
     clip.out_point = min(new_out, source_limit(clip, project))
 
@@ -119,12 +150,10 @@ def split_clip(seq: Sequence, clip: Clip, t: float) -> Optional[Clip]:
     if not (clip.start + MIN_CLIP_DURATION < t < clip.end - MIN_CLIP_DURATION):
         return None
     right = clip.copy()
-    src_t = clip.source_time(t)
     _split_transform(clip, right, t)
-    clip.out_point = src_t
+    cut_head(right, t)
+    cut_tail(clip, t)
     clip.fade_out = 0.0
-    _move_start_keep_content(right, t)
-    right.in_point = src_t
     right.fade_in = 0.0
     right.cross_dissolve = 0.0
     seq.clips[right.id] = right
@@ -164,17 +193,15 @@ def clear_range(seq: Sequence, track_id: str, start: float, end: float,
             del seq.clips[c.id]  # fully covered
         elif c.start < start and c.end > end:
             right = split_clip(seq, c, end)
-            c.out_point = c.source_time(start)
+            cut_tail(c, start)
             c.fade_out = 0.0
             if right is not None:
                 right.link_id = None
         elif c.start < start:
-            c.out_point = c.source_time(start)
+            cut_tail(c, start)
             c.fade_out = 0.0
         else:
-            new_in = c.source_time(end)
-            c.in_point = new_in
-            _move_start_keep_content(c, end)
+            cut_head(c, end)
             c.fade_in = 0.0
             c.cross_dissolve = 0.0
 

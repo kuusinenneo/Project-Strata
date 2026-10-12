@@ -170,6 +170,7 @@ class Clip:
     name: str = ""
     id: str = field(default_factory=new_id)
     speed: float = 1.0
+    reverse: bool = False  # play the source range backwards (out_point -> in_point)
     volume: float = 100.0  # % (0..200)
     fade_in: float = 0.0  # seconds
     fade_out: float = 0.0
@@ -194,6 +195,8 @@ class Clip:
 
     def source_time(self, t: float) -> float:
         """Source media time shown at timeline time ``t``."""
+        if self.reverse:
+            return max(self.in_point, self.out_point - (t - self.start) * self.speed)
         return self.in_point + (t - self.start) * self.speed
 
     def progress(self, t: float) -> float:

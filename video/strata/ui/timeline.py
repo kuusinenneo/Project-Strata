@@ -528,8 +528,8 @@ class TimelineCanvas(QWidget):
         label = clip.name or clip.kind
         if clip.kind == "text" and clip.text is not None:
             label = "T  " + (clip.text.text.splitlines()[0] if clip.text.text else "")
-        if abs(clip.speed - 1.0) > 1e-6:
-            label += f"  [{clip.speed:g}×]"
+        if abs(clip.speed - 1.0) > 1e-6 or clip.reverse:
+            label += f"  [{'-' if clip.reverse else ''}{clip.speed:g}×]"
         if clip.kind != "audio" and (not clip.effects.is_color_neutral() or clip.effects.blur > 0
                                      or clip.effects.opacity < 100 or clip.transform.animate
                                      or abs(clip.transform.scale - 100) > EPS):
@@ -569,6 +569,8 @@ class TimelineCanvas(QWidget):
             t_b = self.t_of(x + step)
             sa = clip.source_time(t_a) * PEAKS_PER_SECOND
             sb = clip.source_time(t_b) * PEAKS_PER_SECOND
+            if sb < sa:  # reversed clip
+                sa, sb = sb, sa
             ia = int(max(0.0, sa))
             ib = min(len(peaks), max(ia + 1, int(sb)))
             if ia >= len(peaks):

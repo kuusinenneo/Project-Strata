@@ -215,3 +215,21 @@ def test_cube_lut(tmp_path, qapp, project):
     a.effects.lut_path = str(cube)
     r, g, b = pixel(Compositor(p).render(1.0, 320, 180), 160, 90)
     assert r < 30 and g > 220 and b > 220
+
+
+def test_reverse_audio_plays_backwards(project):
+    from strata.media.audio import AudioData
+    p, red, blue, tone = project
+    seq = p.sequence
+    c = edits.clips_from_media(tone, 0, None, seq.audio_tracks[0].id)[0]
+    edits.place_clips(seq, [c])
+    store = AudioStore()
+    sr = store.sample_rate
+    ramp = (np.arange(int(tone.duration * sr)) % 30000).astype(np.int16)  # increasing values
+    store._data[tone.id] = AudioData(np.stack([ramp, ramp], 1), sr, np.zeros(1, np.float32))
+    mixer = AudioMixer(p, store)
+    fwd = mixer.mix(0.2, 2000)[:, 0]
+    assert np.all(np.diff(fwd) >= 0)
+    c.reverse = True
+    rev = mixer.mix(0.2, 2000)[:, 0]
+    assert np.all(np.diff(rev) <= 0)

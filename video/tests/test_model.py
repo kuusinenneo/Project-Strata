@@ -178,3 +178,21 @@ def test_save_load_roundtrip(tmp_path):
     assert q.to_dict()["sequence"] == p.to_dict()["sequence"]
     assert q.sequence.clips[t.id].text.text == "Hello"
     assert q.sequence.clips[clips[0].id].effects.sepia
+
+
+def test_reverse_clip_editing():
+    from strata.model.project import Clip
+    c = Clip(kind="video", track_id="v", start=10.0, in_point=1.0, out_point=5.0, reverse=True)
+    assert c.source_time(10.0) == pytest.approx(5.0)
+    assert c.source_time(12.0) == pytest.approx(3.0)
+    seq = Sequence()
+    seq.clips[c.id] = c
+    right = edits.split_clip(seq, c, 12.0)
+    assert (c.in_point, c.out_point) == pytest.approx((3.0, 5.0))  # left shows 5 -> 3
+    assert (right.in_point, right.out_point) == pytest.approx((1.0, 3.0))  # right shows 3 -> 1
+    assert right.source_time(12.0) == pytest.approx(3.0)
+    edits.trim_end(right, 13.0)
+    assert right.in_point == pytest.approx(2.0)
+    edits.trim_start(c, 11.0)
+    assert (c.start, c.out_point) == pytest.approx((11.0, 4.0))
+    assert c.source_time(11.0) == pytest.approx(4.0)  # content stays anchored

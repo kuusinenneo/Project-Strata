@@ -21,6 +21,7 @@ CATALOG = [
         ("zoom_out", "Gradual Zoom Out"),
         ("speed_2x", "Speed ×2"),
         ("speed_half", "Speed ×0.5"),
+        ("reverse", "Reverse"),
     ]),
     ("Transitions", "transition", [
         ("cross_dissolve", "Cross Dissolve"),

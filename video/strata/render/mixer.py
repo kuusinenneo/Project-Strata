@@ -85,7 +85,10 @@ class AudioMixer:
             if i1 <= i0:
                 continue
             ts = t0 + np.arange(i0, i1, dtype=np.float64) / sr
-            src = clip.in_point + (ts - clip.start) * clip.speed
+            if clip.reverse:
+                src = clip.out_point - (ts - clip.start) * clip.speed
+            else:
+                src = clip.in_point + (ts - clip.start) * clip.speed
             idx = np.round(src * data.sample_rate).astype(np.int64)
             valid = (idx >= 0) & (idx < len(data.samples))
             if not valid.any():

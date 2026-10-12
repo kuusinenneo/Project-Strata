@@ -462,6 +462,20 @@ class EditorController(QObject):
                     o.start += shift
         self._done()
 
+    def set_reverse(self, clip_id: str, reverse: bool) -> None:
+        """Play a clip (and its linked audio/video) backwards."""
+        clip = self.clip(clip_id)
+        if clip is None or self.is_locked(clip.track_id):
+            return
+        media = self.project.media_for(clip)
+        if clip.kind == "text" or (media is not None and media.is_still):
+            self.message.emit("Only video and audio clips can be reversed")
+            return
+        self._push("Reverse clip" if reverse else "Play forward")
+        for c in [clip] + self.editable(self.seq.linked(clip)):
+            c.reverse = bool(reverse)
+        self._done()
+
     def apply_effect(self, clip_id: str, effect: str, at_time: Optional[float] = None) -> bool:
         """Apply an effect/transition dragged from the Effects panel."""
         clip = self.clip(clip_id)
@@ -488,6 +502,10 @@ class EditorController(QObject):
                 setattr(c, effect, min(1.0, c.duration / 2))
             self.select([clip.id])
             self._done()
+            return True
+        if effect == "reverse":
+            self.set_reverse(clip.id, not clip.reverse)
+            self.select([clip.id])
             return True
         if effect in ("speed_2x", "speed_half"):
             self.undo.break_merge()
