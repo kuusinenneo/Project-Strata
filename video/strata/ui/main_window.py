@@ -297,6 +297,7 @@ class MainWindow(QMainWindow):
         self.a_snap.setChecked(c.snapping)
         c.snapping_changed.connect(self.a_snap.setChecked)
         self.a_clear_marks = A("Clear In/Out", lambda: self.active_monitor.clear_marks(), "Ctrl+Shift+X")
+        self.a_send_frame = A("Send Frame to Strata &Photo", self.send_frame_to_photo, "Ctrl+Shift+P")
 
         self.a_play = A("Play / Pause", lambda: self.active_monitor.toggle_play(), "Space", "play")
         self.a_j = A("Play Backward (J)", lambda: self.active_monitor.shuttle(-1), "J")
@@ -335,7 +336,8 @@ class MainWindow(QMainWindow):
             m.addSeparator() if a is None else m.addAction(a)
         m = mb.addMenu("&Sequence")
         for a in (self.a_seq_settings, None, self.a_add_v, self.a_add_a, None, self.a_zoom_in,
-                  self.a_zoom_out, self.a_zoom_fit, self.a_snap, None, self.a_clear_marks):
+                  self.a_zoom_out, self.a_zoom_fit, self.a_snap, None, self.a_clear_marks, None,
+                  self.a_send_frame):
             m.addSeparator() if a is None else m.addAction(a)
         m = mb.addMenu("&Tools")
         for a in (self.a_tool_select, self.a_tool_razor, self.a_tool_ripple, self.a_tool_text):
@@ -415,6 +417,44 @@ class MainWindow(QMainWindow):
         self.settings.setValue("use_proxies", self.controller.use_proxies)
         self.program.request_render()
         self.controller.message.emit("Playing from proxies" if self.controller.use_proxies else "Playing from original media")
+
+    # ------------------------------------------------------------------ suite
+    def export_current_frame(self, folder: Optional[str] = None) -> str:
+        """Render the sequence frame at the playhead at full resolution (original media) to a PNG."""
+        from ..render.compositor import Compositor
+        from .playback import timecode
+        c = self.controller
+        seq = c.project.sequence
+        folder = folder or os.path.join(os.path.expanduser("~"), "Pictures", "Strata Video", "Frames")
+        os.makedirs(folder, exist_ok=True)
+        stem = os.path.splitext(os.path.basename(c.project.path or "Sequence"))[0]
+        name = f"{stem}-{timecode(c.playhead, seq.fps).replace(':', '-')}.png"
+        path = os.path.join(folder, name)
+        comp = Compositor(c.project)
+        try:
+            img = comp.render(c.playhead, seq.width, seq.height)
+        finally:
+            comp.reset()
+        if not img.save(path, "PNG"):
+            raise OSError(f"Could not write {path}")
+        return path
+
+    def send_frame_to_photo(self) -> None:
+        from .. import suite
+        if not self.controller.project.sequence.clips:
+            QMessageBox.information(self, "Send Frame", "The sequence is empty.")
+            return
+        try:
+            path = self.export_current_frame()
+        except Exception as exc:
+            QMessageBox.critical(self, "Send Frame", f"Could not save the frame:\n{exc}")
+            return
+        if suite.launch("photo", [path]):
+            self.controller.message.emit(f"Opened the frame in Strata Photo ({os.path.basename(path)})")
+        else:
+            QMessageBox.information(self, "Send Frame",
+                                    f"The frame was saved to:\n{path}\n\nStrata Photo was not found next to Strata Video. "
+                                    "Build it with photo\\build.bat (or set STRATA_PHOTO_EXE).")
 
     # ------------------------------------------------------------------ autosave / recovery
     def autosave_now(self) -> bool:

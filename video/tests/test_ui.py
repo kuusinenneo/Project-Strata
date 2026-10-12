@@ -550,3 +550,29 @@ def test_background_proxies_used_for_preview(win, media_dir, qapp):
     assert any(k.endswith("|" + proxy) for k in comp.pool._items)
     c.use_proxies = False
     assert c.proxy_path(vid.path) is None  # export and "proxies off" use the original
+
+
+def test_send_frame_to_photo(win, media_dir, tmp_path, monkeypatch):
+    from PySide6.QtGui import QImage
+    from strata import suite
+    c = win.controller
+    (vid,) = media(win, media_dir, "video.mp4")
+    c.add_media_to_timeline([vid.id], None, 0.0)
+    c.set_playhead(1.0)
+    path = win.export_current_frame(str(tmp_path))
+    img = QImage(path)
+    seq = c.project.sequence
+    assert (img.width(), img.height()) == (seq.width, seq.height)
+    launched = []
+    monkeypatch.setattr(suite, "launch", lambda app, files: launched.append((app, list(files))) or True)
+    monkeypatch.setattr(win, "export_current_frame", lambda folder=None: path)
+    win.a_send_frame.trigger()
+    assert launched == [("photo", [path])]
+
+
+def test_suite_finds_apps_from_env(tmp_path, monkeypatch):
+    from strata import suite
+    exe = tmp_path / "StrataPhoto.exe"
+    exe.write_bytes(b"")
+    monkeypatch.setenv("STRATA_PHOTO_EXE", str(exe))
+    assert suite.find_app("photo") == str(exe)
