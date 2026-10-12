@@ -28,6 +28,7 @@
 - Video: export presets (YouTube 1080p, TikTok/Reels/Shorts 1080x1920, Instagram square 1080x1080) and fixed-frame resolutions; progress bar and cancel already existed
 - Video: background 540p proxy generation for 4K+ footage, used by the monitors (toggle in Playback menu); export always uses originals
 - Shared: moved Strata Photo's theme loader, icon loader, styles and ValueSlider into shared/dotnet/Strata.Ui so Strata PDF can reuse them (Photo unchanged in behaviour; tests + self-test + published build verified)
+- PDF: StrataPdf.Core: workspace model (merge, reorder, rotate, delete, undo/redo), annotations (highlight, pen, text box, shapes/arrows, sticky notes, image signatures), page numbers, watermarks, saving with PDFsharp, extract pages, real redaction (page re-rendered as image with the area burned out), strong compression, form fill, image extraction; 15 tests
 
 ### In progress
 - (none)

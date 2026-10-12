@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- PDF model, rendering (PDFium via Docnet.Core), page operations and saving (PDFsharp). No UI code. -->
+  <PropertyGroup>
+    <RootNamespace>StrataPdf.Core</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="PDFiumCore" Version="4688.0.0" />
+    <PackageReference Include="PDFsharp" Version="6.2.4" />
+    <PackageReference Include="SkiaSharp" Version="2.88.9" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="StrataPdf.Tests" />
+  </ItemGroup>
+</Project>
