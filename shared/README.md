@@ -4,7 +4,7 @@ Both Strata apps take their look from this folder, so they stay visually consist
 
 | File | What it holds | Used by |
 | --- | --- | --- |
-| `theme.json` | Colour palette, font stacks and sizes, spacing/radius tokens, icon conventions | Strata Video (`video/strata/ui/theme.py`), Strata Photo (`StrataPhoto.App/Theme`) |
+| `theme.json` | Colour palette, font stacks and sizes, spacing/radius tokens, icon conventions | Strata Video (`video/strata/ui/theme.py`), Strata Photo and Strata PDF (via `dotnet/Strata.Ui`) |
 | `icons/*.svg` | 24×24 UI and tool icons, drawn with `currentColor` | Strata Photo (tools, panels, actions) |
 | `icons/app/strata-video.*` | Strata Video app logo (`.svg`, `.ico`, 256 px `.png`) | Strata Video exe and window icon |
 | `icons/app/strata-photo.*` | Strata Photo app logo (`.svg`, `.ico`, 256 px `.png`) | Strata Photo exe and window icon |
