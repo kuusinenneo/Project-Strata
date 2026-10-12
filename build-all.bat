@@ -9,7 +9,18 @@ rem Usage:  build-all.bat           build and self-test everything
 rem         build-all.bat notest    skip tests and self-tests
 setlocal
 cd /d "%~dp0"
+rem Started by double-clicking in Explorer? Then keep the window open at the end so the result
+rem can be read. (Not when run from a terminal or from build-all.bat.) The process chain is
+rem powershell < cmd (for /f) < cmd (this script) < explorer, hence three levels up.
+set "PAUSE_AT_END="
+if not defined STRATA_NO_PAUSE (
+    for /f "usebackq delims=" %%P in (`powershell -NoProfile -Command "$id = $PID; for ($i = 0; $i -lt 3; $i++) { $id = (Get-CimInstance Win32_Process -Filter ('ProcessId=' + $id)).ParentProcessId }; (Get-Process -Id $id -ErrorAction SilentlyContinue).ProcessName"`) do (
+        if /i "%%P"=="explorer" set "PAUSE_AT_END=1"
+    )
+)
 set "ARG=%~1"
+rem The individual build scripts must not wait for a key press.
+set "STRATA_NO_PAUSE=1"
 
 echo === Strata Video ===
 call video\build.bat %ARG% || goto :error
@@ -35,6 +46,7 @@ if errorlevel 8 goto :error
 
 if /i not "%ARG%"=="notest" (
     echo Checking that the launcher finds all three apps...
+echo (A window opens for a moment and closes by itself: that is the automatic test.)
     start "" /wait "%SUITE%\Strata.exe" --self-test "%CD%\dist\launcher-selftest.png"
     type "dist\launcher-selftest.txt"
     echo.
@@ -43,9 +55,11 @@ if /i not "%ARG%"=="notest" (
 
 echo.
 echo Done: %CD%\%SUITE%\Strata.exe
+if defined PAUSE_AT_END pause
 exit /b 0
 
 :error
 echo.
 echo Build FAILED.
+if defined PAUSE_AT_END pause
 exit /b 1
