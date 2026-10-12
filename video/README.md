@@ -118,6 +118,9 @@ rendering, export and headless UI interactions.
    Effect Controls: scale, position, gradual zoom/pan, opacity, speed, volume, brightness,
    contrast, saturation, black & white, sepia, blur, fade in/out and transitions (cross dissolve,
    dip to black, wipe — pick the style under *Fades & Transitions*).
+   **Keyframes:** in Effect Controls → Motion, press *◆ Add* to keyframe scale, position, rotation
+   and opacity at the playhead. Once a clip has keyframes, changing any of those values sets it
+   at the playhead; ◀ ▶ jump between keyframes (shown as diamonds on the clip).
 6. **Text**: use the text tool (T), drag a text preset from the Effects tab, or
    *Clip → Add Text at Playhead*. Pick a layout preset (centered title, lower third, top
    caption, subtitle), font, size, colour, background box and fades in Effect Controls.

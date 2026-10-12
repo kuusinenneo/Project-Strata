@@ -512,6 +512,15 @@ class TimelineCanvas(QWidget):
             has_prev = self.seq.previous_adjacent(clip) is not None
             dr = QRectF(r.left(), r.top() + 15, max(4.0, dw / 2 if has_prev else dw), r.height() - 15)
             p.fillRect(dr, QBrush(QColor(255, 255, 255, 70), Qt.FDiagPattern))
+        if clip.transform.keyframes:  # keyframe diamonds along the bottom edge
+            p.setPen(QPen(QColor(20, 20, 24, alpha), 1))
+            p.setBrush(QColor(255, 210, 90, alpha))
+            y = r.bottom() - 6
+            for k in clip.transform.keyframes:
+                if 0 <= k.t <= clip.duration:
+                    x = r.left() + k.t * self.pps
+                    p.drawPolygon(QPolygonF([QPointF(x, y - 4), QPointF(x + 4, y), QPointF(x, y + 4), QPointF(x - 4, y)]))
+            p.setBrush(Qt.NoBrush)
         p.setRenderHint(QPainter.Antialiasing, False)
         # label
         p.setFont(self.small_font)

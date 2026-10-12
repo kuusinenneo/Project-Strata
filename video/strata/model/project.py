@@ -104,6 +104,20 @@ class Effects:
                 and not self.black_white and not self.sepia)
 
 
+KEYFRAME_PROPS = ("scale", "pos_x", "pos_y", "rotation", "opacity")
+
+
+@dataclass
+class Keyframe:
+    """Motion values at ``t`` seconds after the clip's start (linear in between)."""
+    t: float
+    scale: float = 100.0
+    pos_x: float = 0.0
+    pos_y: float = 0.0
+    rotation: float = 0.0  # degrees, clockwise
+    opacity: float = 100.0  # %
+
+
 @dataclass
 class Transform:
     scale: float = 100.0  # % of "fit to frame"
@@ -113,6 +127,9 @@ class Transform:
     scale_end: float = 100.0
     pos_x_end: float = 0.0
     pos_y_end: float = 0.0
+    rotation: float = 0.0  # degrees, clockwise
+    # When present, keyframes drive scale/position/rotation/opacity instead of the values above.
+    keyframes: list = field(default_factory=list)  # list[Keyframe], sorted by t
 
     def at(self, progress: float) -> tuple[float, float, float]:
         """Return (scale%, pos_x%, pos_y%) at clip progress 0..1."""
@@ -180,6 +197,48 @@ class Clip:
         d = self.duration
         return 0.0 if d <= EPS else (t - self.start) / d
 
+    def motion_at(self, t: float) -> dict:
+        """Scale %, position %, rotation ° and opacity % at timeline time ``t``."""
+        kfs = self.transform.keyframes
+        if kfs:
+            local = t - self.start
+            if local <= kfs[0].t:
+                k = kfs[0]
+                return {p: getattr(k, p) for p in KEYFRAME_PROPS}
+            for a, b in zip(kfs, kfs[1:]):
+                if local <= b.t:
+                    u = 0.0 if b.t - a.t <= EPS else (local - a.t) / (b.t - a.t)
+                    return {p: getattr(a, p) + (getattr(b, p) - getattr(a, p)) * u for p in KEYFRAME_PROPS}
+            k = kfs[-1]
+            return {p: getattr(k, p) for p in KEYFRAME_PROPS}
+        scale, px, py = self.transform.at(self.progress(t))
+        return {"scale": scale, "pos_x": px, "pos_y": py,
+                "rotation": self.transform.rotation, "opacity": self.effects.opacity}
+
+    def keyframe_at(self, t: float, tolerance: float = 1e-3) -> Optional[Keyframe]:
+        local = t - self.start
+        return next((k for k in self.transform.keyframes if abs(k.t - local) <= tolerance), None)
+
+    def set_keyframe(self, t: float, prop: Optional[str] = None, value: Optional[float] = None,
+                     tolerance: float = 1e-3) -> Keyframe:
+        """Add (or update) a keyframe at timeline time ``t`` holding the current motion values."""
+        local = max(0.0, min(self.duration, t - self.start))
+        k = self.keyframe_at(self.start + local, tolerance)
+        if k is None:
+            k = Keyframe(t=local, **self.motion_at(self.start + local))
+            self.transform.keyframes.append(k)
+            self.transform.keyframes.sort(key=lambda kf: kf.t)
+        if prop is not None:
+            setattr(k, prop, value)
+        return k
+
+    def remove_keyframe(self, t: float, tolerance: float = 1e-3) -> bool:
+        k = self.keyframe_at(t, tolerance)
+        if k is None:
+            return False
+        self.transform.keyframes.remove(k)
+        return True
+
     def fade_factor(self, t: float) -> float:
         """0..1 multiplier from fade in/out at timeline time ``t``."""
         f = 1.0
@@ -197,7 +256,10 @@ class Clip:
     def from_dict(cls, data: dict) -> "Clip":
         data = dict(data)
         effects = _load_dataclass(Effects, data.pop("effects", {}))
-        transform = _load_dataclass(Transform, data.pop("transform", {}))
+        tdata = dict(data.pop("transform", {}) or {})
+        kfs = [_load_dataclass(Keyframe, k) for k in tdata.pop("keyframes", []) or []]
+        transform = _load_dataclass(Transform, tdata)
+        transform.keyframes = sorted(kfs, key=lambda k: k.t)
         text = data.pop("text", None)
         clip = _load_dataclass(cls, data)
         clip.effects = effects

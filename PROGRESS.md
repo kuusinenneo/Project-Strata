@@ -22,6 +22,7 @@
 - Video: autosave every 2 minutes + crash recovery on next launch; projects now save as `.strata`
   (old `.strata.json` files still open)
 - Video: Dip to Black and Wipe transitions (Effects panel + transition style in Effect Controls; cross dissolve already existed)
+- Video: keyframes for scale, position, rotation and opacity (plus a new Rotation control); diamonds on timeline clips; keyframes stay put when clips are split or trimmed
 
 ### In progress
 - (none)

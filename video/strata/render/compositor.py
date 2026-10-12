@@ -182,13 +182,22 @@ class Compositor:
 
     def _draw_clip_inner(self, p: QPainter, clip: Clip, t: float, alpha: float,
                          out_w: int, out_h: int, fast: bool = False) -> None:
-        alpha *= max(0.0, min(1.0, clip.effects.opacity / 100.0)) * _clip_fade(clip, t)
+        motion = clip.motion_at(t)
+        alpha *= max(0.0, min(1.0, motion["opacity"] / 100.0)) * _clip_fade(clip, t)
         if alpha <= 1e-3:
             return
-        scale, px, py = clip.transform.at(clip.progress(t))
+        scale, px, py, rot = motion["scale"], motion["pos_x"], motion["pos_y"], motion["rotation"]
         if clip.kind == "text":
             if clip.text is not None:
+                if abs(rot) > EPS:
+                    p.save()
+                    cx, cy = out_w / 2 + px / 100.0 * out_w, out_h / 2 + py / 100.0 * out_h
+                    p.translate(cx, cy)
+                    p.rotate(rot)
+                    p.translate(-cx, -cy)
                 draw_text(p, clip.text, out_w, out_h, alpha, px, py, scale / 100.0)
+                if abs(rot) > EPS:
+                    p.restore()
             return
 
         media = self.project.media_for(clip)
@@ -202,7 +211,8 @@ class Compositor:
         cx = out_w / 2 + px / 100.0 * out_w
         cy = out_h / 2 + py / 100.0 * out_h
         target = QRectF(cx - fw / 2, cy - fh / 2, fw, fh)
-        if not target.intersects(QRectF(0, 0, out_w, out_h)):
+        rotated = abs(rot) > EPS
+        if not rotated and not target.intersects(QRectF(0, 0, out_w, out_h)):
             return
         # decode no larger than the source, no larger than drawn
         dw = max(2, min(media.width, int(round(fw))))
@@ -219,7 +229,14 @@ class Compositor:
             arr = fx.blur(arr, radius)
         img = _qimage_from_array(arr)
         p.setOpacity(min(1.0, alpha))
-        p.drawImage(target, img)
+        if rotated:
+            p.save()
+            p.translate(cx, cy)
+            p.rotate(rot)
+            p.drawImage(QRectF(-fw / 2, -fh / 2, fw, fh), img)
+            p.restore()
+        else:
+            p.drawImage(target, img)
         p.setOpacity(1.0)
 
     @staticmethod

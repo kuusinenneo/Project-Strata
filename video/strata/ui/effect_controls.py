@@ -110,9 +110,35 @@ class EffectControls(QWidget):
         # -- Motion
         self.motion = QGroupBox("Motion")
         f = QFormLayout(self.motion)
-        self.scale = self._num(f, "Scale", 1, 1000, 1, 0, " %", lambda c, v: setattr(c.transform, "scale", v))
-        self.pos_x = self._num(f, "Position X", -200, 200, 0.5, 1, " %", lambda c, v: setattr(c.transform, "pos_x", v))
-        self.pos_y = self._num(f, "Position Y", -200, 200, 0.5, 1, " %", lambda c, v: setattr(c.transform, "pos_y", v))
+        self.scale = self._num(f, "Scale", 1, 1000, 1, 0, " %", self._motion("scale"))
+        self.pos_x = self._num(f, "Position X", -200, 200, 0.5, 1, " %", self._motion("pos_x"))
+        self.pos_y = self._num(f, "Position Y", -200, 200, 0.5, 1, " %", self._motion("pos_y"))
+        self.rotation = self._num(f, "Rotation", -360, 360, 1, 1, " °", self._motion("rotation"))
+        # Keyframes: once a clip has any, motion and opacity edits set the value at the playhead.
+        kf_row = QHBoxLayout()
+        self.kf_info = QLabel("No keyframes")
+        self.kf_info.setWordWrap(True)
+        self.kf_info.setStyleSheet("color:#8c9098;")
+        self.kf_add = QPushButton("◆ Add")
+        self.kf_add.setToolTip("Add a keyframe at the playhead with the current values")
+        self.kf_add.clicked.connect(self._add_keyframe)
+        self.kf_remove = QPushButton("Remove")
+        self.kf_remove.setToolTip("Remove the keyframe at the playhead")
+        self.kf_remove.clicked.connect(self._remove_keyframe)
+        self.kf_prev = QPushButton("◀")
+        self.kf_prev.setToolTip("Go to the previous keyframe")
+        self.kf_prev.clicked.connect(lambda: self._jump_keyframe(-1))
+        self.kf_next = QPushButton("▶")
+        self.kf_next.setToolTip("Go to the next keyframe")
+        self.kf_next.clicked.connect(lambda: self._jump_keyframe(1))
+        self.kf_clear = QPushButton("Clear")
+        self.kf_clear.setToolTip("Remove all keyframes")
+        self.kf_clear.clicked.connect(lambda: self._apply(None, lambda c, _: c.transform.keyframes.clear(), None))
+        for b in (self.kf_prev, self.kf_add, self.kf_remove, self.kf_next, self.kf_clear):
+            b.setAutoDefault(False)
+            kf_row.addWidget(b)
+        f.addRow("Keyframes", kf_row)
+        f.addRow("", self.kf_info)
         self.animate = self._check(f, "Gradual zoom / pan over the clip", self._set_animate)
         self.scale_end = self._num(f, "End scale", 1, 1000, 1, 0, " %", lambda c, v: setattr(c.transform, "scale_end", v))
         self.pos_x_end = self._num(f, "End position X", -200, 200, 0.5, 1, " %", lambda c, v: setattr(c.transform, "pos_x_end", v))
@@ -122,7 +148,7 @@ class EffectControls(QWidget):
         # -- Opacity / speed
         self.basic = QGroupBox("Opacity && Time")
         f = QFormLayout(self.basic)
-        self.opacity = self._num(f, "Opacity", 0, 100, 1, 0, " %", lambda c, v: setattr(c.effects, "opacity", v))
+        self.opacity = self._num(f, "Opacity", 0, 100, 1, 0, " %", self._motion("opacity"))
         self.speed = SliderSpin(0.1, 16, 0.1, 2, " ×", slider=False)
         self.speed.valueChanged.connect(self._set_speed)
         f.addRow("Speed", self.speed)
@@ -209,6 +235,7 @@ class EffectControls(QWidget):
 
         controller.selection_changed.connect(self.load)
         controller.project_changed.connect(self.load)
+        controller.playhead_changed.connect(self._playhead_moved)
         self.load()
 
     # ------------------------------------------------------------------ builders
@@ -239,6 +266,61 @@ class EffectControls(QWidget):
         merge = f"{self.clip_id}:{key}" if key else None
         self.controller.update_clip(self.clip_id, lambda c: setter(c, value),
                                     "Change " + (key or "clip").replace("_", " "), merge, linked)
+
+    # -- keyframes
+    def _motion(self, prop: str):
+        """Setter for a keyframable value: edits the keyframe at the playhead when keyframed."""
+        def setter(c: Clip, v: float) -> None:
+            if c.transform.keyframes:
+                c.set_keyframe(self._playhead_in(c), prop, v, tolerance=self._frame())
+            elif prop == "opacity":
+                c.effects.opacity = v
+            else:
+                setattr(c.transform, prop, v)
+        return setter
+
+    def _frame(self) -> float:
+        return 0.5 / max(1.0, self.controller.project.sequence.fps)
+
+    def _playhead_in(self, c: Clip) -> float:
+        return min(max(self.controller.playhead, c.start), c.end)
+
+    def _add_keyframe(self) -> None:
+        clip = self.controller.primary_selected()
+        if clip is None:
+            return
+        t = self._playhead_in(clip)
+
+        def add(c: Clip, _):
+            if not c.transform.keyframes and c.transform.animate:
+                # turn the old start->end zoom into keyframes so the motion stays identical
+                c.set_keyframe(c.start)
+                c.set_keyframe(c.end)
+                c.transform.animate = False
+            c.set_keyframe(t, tolerance=self._frame())
+        self._apply(None, add, None)
+
+    def _remove_keyframe(self) -> None:
+        clip = self.controller.primary_selected()
+        if clip is not None:
+            t = self._playhead_in(clip)
+            self._apply(None, lambda c, _: c.remove_keyframe(t, tolerance=self._frame()), None)
+
+    def _jump_keyframe(self, direction: int) -> None:
+        clip = self.controller.primary_selected()
+        if clip is None or not clip.transform.keyframes:
+            return
+        now = self.controller.playhead - clip.start
+        times = [k.t for k in clip.transform.keyframes if 0 <= k.t <= clip.duration]
+        eps = self._frame()
+        cand = [x for x in times if x > now + eps] if direction > 0 else [x for x in times if x < now - eps]
+        if cand:
+            self.controller.set_playhead(clip.start + (min(cand) if direction > 0 else max(cand)))
+
+    def _playhead_moved(self, _t: float) -> None:
+        clip = self.controller.primary_selected()
+        if clip is not None and clip.transform.keyframes:
+            self.load()
 
     def _set_animate(self, c: Clip, on: bool) -> None:
         tr = c.transform
@@ -303,9 +385,23 @@ class EffectControls(QWidget):
         self.trans.setVisible(True)
 
         tr, fx = clip.transform, clip.effects
-        for w, v in ((self.scale, tr.scale), (self.pos_x, tr.pos_x), (self.pos_y, tr.pos_y),
+        mo = clip.motion_at(self._playhead_in(clip)) if tr.keyframes else {
+            "scale": tr.scale, "pos_x": tr.pos_x, "pos_y": tr.pos_y, "rotation": tr.rotation, "opacity": fx.opacity}
+        n = len(tr.keyframes)
+        here = clip.keyframe_at(self._playhead_in(clip), self._frame()) is not None
+        if n == 0:
+            self.kf_info.setText("No keyframes: values apply to the whole clip.")
+        else:
+            self.kf_info.setText(f"{n} keyframe{'s' if n != 1 else ''}{' (one at the playhead)' if here else ''}. "
+                                 "Changing a value sets it at the playhead.")
+        self.kf_remove.setEnabled(here)
+        for b in (self.kf_prev, self.kf_next, self.kf_clear):
+            b.setEnabled(n > 0)
+        self.animate.setEnabled(n == 0)
+        self.rotation.setValue(mo["rotation"])
+        for w, v in ((self.scale, mo["scale"]), (self.pos_x, mo["pos_x"]), (self.pos_y, mo["pos_y"]),
                      (self.scale_end, tr.scale_end), (self.pos_x_end, tr.pos_x_end),
-                     (self.pos_y_end, tr.pos_y_end), (self.opacity, fx.opacity),
+                     (self.pos_y_end, tr.pos_y_end), (self.opacity, mo["opacity"]),
                      (self.speed, clip.speed), (self.brightness, fx.brightness),
                      (self.contrast, fx.contrast), (self.saturation, fx.saturation),
                      (self.blur, fx.blur), (self.fade_in, clip.fade_in),
@@ -319,7 +415,7 @@ class EffectControls(QWidget):
             cb.setChecked(v)
             cb.blockSignals(False)
         for w in (self.scale_end, self.pos_x_end, self.pos_y_end):
-            w.setEnabled(tr.animate)
+            w.setEnabled(tr.animate and n == 0)
 
         if clip.kind == "text" and clip.text is not None:
             t = clip.text

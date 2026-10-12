@@ -70,6 +70,14 @@ def source_limit(clip: Clip, project: Optional[Project]) -> float:
 
 
 # --------------------------------------------------------------------------- trimming
+def _move_start_keep_content(clip: Clip, new_start: float) -> None:
+    """Change ``clip.start`` while keyframes stay at the same timeline positions."""
+    delta = new_start - clip.start
+    for k in clip.transform.keyframes:
+        k.t -= delta
+    clip.start = new_start
+
+
 def trim_start(clip: Clip, new_start: float, project: Optional[Project] = None) -> None:
     """Move the left edge of ``clip`` to ``new_start`` (content stays anchored)."""
     new_start = max(0.0, min(new_start, clip.end - MIN_CLIP_DURATION))
@@ -81,7 +89,7 @@ def trim_start(clip: Clip, new_start: float, project: Optional[Project] = None) 
         # still/text: shift the whole source window instead of going negative
         clip.out_point += -new_in
         new_in = 0.0
-    clip.start = new_start
+    _move_start_keep_content(clip, new_start)
     clip.in_point = new_in
 
 
@@ -115,7 +123,7 @@ def split_clip(seq: Sequence, clip: Clip, t: float) -> Optional[Clip]:
     _split_transform(clip, right, t)
     clip.out_point = src_t
     clip.fade_out = 0.0
-    right.start = t
+    _move_start_keep_content(right, t)
     right.in_point = src_t
     right.fade_in = 0.0
     right.cross_dissolve = 0.0
@@ -166,7 +174,7 @@ def clear_range(seq: Sequence, track_id: str, start: float, end: float,
         else:
             new_in = c.source_time(end)
             c.in_point = new_in
-            c.start = end
+            _move_start_keep_content(c, end)
             c.fade_in = 0.0
             c.cross_dissolve = 0.0
 

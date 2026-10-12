@@ -472,3 +472,28 @@ def test_save_uses_strata_extension(win, media_dir, tmp_path):
     c.new_project()
     assert c.open_project(path) == []
     assert len(c.project.sequence.clips) == 2
+
+
+def test_keyframe_controls(win, media_dir):
+    c = win.controller
+    (vid,) = media(win, media_dir, "video.mp4")
+    c.add_media_to_timeline([vid.id], None, 0.0)
+    clip = next(x for x in c.project.sequence.clips.values() if x.kind == "video")
+    c.select([clip.id])
+    ec = win.effect_controls
+    c.set_playhead(0.5)
+    ec.kf_add.click()
+    assert len(clip.transform.keyframes) == 1
+    c.set_playhead(1.5)
+    ec.scale.spin.setValue(150)  # edit at a new time creates a second keyframe
+    clip = c.clip(clip.id)
+    assert [round(k.t, 2) for k in clip.transform.keyframes] == [0.5, 1.5]
+    assert clip.motion_at(1.0)["scale"] == pytest.approx(125)
+    ec.rotation.spin.setValue(30)
+    assert c.clip(clip.id).motion_at(1.5)["rotation"] == pytest.approx(30)
+    ec.kf_prev.click()
+    assert c.playhead == pytest.approx(0.5)
+    ec.kf_remove.click()
+    assert len(c.clip(clip.id).transform.keyframes) == 1
+    c.do_undo()
+    assert len(c.clip(clip.id).transform.keyframes) == 2

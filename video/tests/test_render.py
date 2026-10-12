@@ -152,3 +152,34 @@ def test_dip_to_black_and_wipe(qapp, project):
     # survives save/load
     from strata.model.project import Project
     assert Project.from_dict(p.to_dict()).sequence.clips[b.id].transition == "wipe"
+
+
+def test_keyframes_interpolate_render_and_survive_edits(qapp, project):
+    from strata.model.project import Project
+    p, red, blue, _ = project
+    seq = p.sequence
+    v1 = seq.video_tracks[0].id
+    (b,) = [c for c in edits.clips_from_media(blue, 0, v1, None) if c.kind == "video"]  # 0..5
+    edits.place_clips(seq, [b])
+    b.set_keyframe(1.0, "opacity", 0.0)
+    b.set_keyframe(3.0, "opacity", 100.0)
+    b.set_keyframe(3.0, "rotation", 90.0)
+    assert [k.t for k in b.transform.keyframes] == [1.0, 3.0]
+    assert b.motion_at(0.0)["opacity"] == 0.0  # held before the first keyframe
+    assert b.motion_at(2.0)["opacity"] == pytest.approx(50.0)
+    assert b.motion_at(2.0)["rotation"] == pytest.approx(45.0)
+    assert b.motion_at(4.5)["rotation"] == 90.0
+    comp = Compositor(p)
+    assert pixel(comp.render(2.0, 320, 180), 160, 90)[2] == pytest.approx(127, abs=12)
+    # rotated 90°: a 16:9 frame turned on its side leaves the left/right edges black
+    img = comp.render(4.0, 320, 180)
+    assert pixel(img, 160, 90)[2] > 200 and max(pixel(img, 5, 90)) < 20
+    # save/load
+    again = Project.from_dict(p.to_dict()).sequence.clips[b.id]
+    assert again.motion_at(2.0)["opacity"] == pytest.approx(50.0)
+    # splitting and trimming keep keyframes at the same timeline positions
+    right = edits.split_clip(seq, b, 2.0)
+    assert right.motion_at(2.5)["opacity"] == pytest.approx(b.motion_at(2.5)["opacity"])
+    edits.trim_start(b, 0.5, p)
+    assert b.motion_at(1.5)["opacity"] == pytest.approx(25.0)
+    assert b.remove_keyframe(1.0) and len(b.transform.keyframes) == 1
