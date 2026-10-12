@@ -53,7 +53,12 @@ echo Self-test passed. Screenshot: publish\selftest.png
 :done
 echo.
 echo Build complete: %CD%\%OUT%\StrataPDF.exe
-if defined PAUSE_AT_END pause
+if defined PAUSE_AT_END (
+    echo.
+    echo Opening the app you just built...
+    start "" "%OUT%\StrataPDF.exe"
+    pause
+)
 exit /b 0
 
 :error

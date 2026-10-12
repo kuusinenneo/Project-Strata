@@ -55,7 +55,12 @@ echo (A window opens for a moment and closes by itself: that is the automatic te
 
 echo.
 echo Done: %CD%\%SUITE%\Strata.exe
-if defined PAUSE_AT_END pause
+if defined PAUSE_AT_END (
+    echo.
+    echo Opening the Strata launcher...
+    start "" "%SUITE%\Strata.exe"
+    pause
+)
 exit /b 0
 
 :error

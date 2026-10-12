@@ -43,7 +43,12 @@ echo.
 
 :done
 echo Build complete: %CD%\%OUT%\Strata.exe
-if defined PAUSE_AT_END pause
+if defined PAUSE_AT_END (
+    echo.
+    echo Opening the app you just built...
+    start "" "%OUT%\Strata.exe"
+    pause
+)
 exit /b 0
 
 :error

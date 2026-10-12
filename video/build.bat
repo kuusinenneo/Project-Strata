@@ -48,7 +48,12 @@ echo Self-test passed.
 :done
 echo.
 echo Build complete: %CD%\dist\StrataVideo\StrataVideo.exe
-if defined PAUSE_AT_END pause
+if defined PAUSE_AT_END (
+    echo.
+    echo Opening the app you just built...
+    start "" "dist\StrataVideo\StrataVideo.exe"
+    pause
+)
 exit /b 0
 
 :error
