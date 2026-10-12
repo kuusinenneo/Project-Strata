@@ -97,11 +97,14 @@ class Effects:
     sepia: bool = False
     blur: float = 0.0  # radius in pixels at 1080p
     opacity: float = 100.0  # 0..100 (%)
+    lut_path: str = ""  # 3D .cube LUT applied after the other colour effects
+    lut_strength: float = 100.0  # %
 
     def is_color_neutral(self) -> bool:
         return (abs(self.brightness) < EPS and abs(self.contrast) < EPS
                 and abs(self.saturation - 100.0) < EPS
-                and not self.black_white and not self.sepia)
+                and not self.black_white and not self.sepia
+                and not (self.lut_path and self.lut_strength > EPS))
 
 
 KEYFRAME_PROPS = ("scale", "pos_x", "pos_y", "rotation", "opacity")

@@ -183,3 +183,35 @@ def test_keyframes_interpolate_render_and_survive_edits(qapp, project):
     edits.trim_start(b, 0.5, p)
     assert b.motion_at(1.5)["opacity"] == pytest.approx(25.0)
     assert b.remove_keyframe(1.0) and len(b.transform.keyframes) == 1
+
+
+def _write_invert_cube(path):
+    lines = ["TITLE \"invert\"", "LUT_3D_SIZE 2"]
+    for b in (0, 1):
+        for g in (0, 1):
+            for r in (0, 1):
+                lines.append(f"{1 - r} {1 - g} {1 - b}")
+    path.write_text("\n".join(lines))
+
+
+def test_cube_lut(tmp_path, qapp, project):
+    import numpy as np
+    from strata.render.lut import load_lut, parse_cube
+    cube = tmp_path / "invert.cube"
+    _write_invert_cube(cube)
+    lut = load_lut(str(cube))
+    assert lut is not None and lut.size == 2 and lut.title == "invert"
+    px = np.array([[[200, 100, 50]]], np.uint8)
+    assert lut.apply(px)[0, 0].tolist() == [55, 155, 205]
+    assert lut.apply(px, 0.5)[0, 0].tolist() == pytest.approx([128, 128, 128], abs=1)
+    with pytest.raises(ValueError):
+        parse_cube("LUT_3D_SIZE 3\n0 0 0\n")
+    assert load_lut(str(tmp_path / "missing.cube")) is None
+    # through the compositor: a red clip comes out cyan
+    p, red, blue, _ = project
+    seq = p.sequence
+    (a,) = [c for c in edits.clips_from_media(red, 0, seq.video_tracks[0].id, None) if c.kind == "video"]
+    edits.place_clips(seq, [a])
+    a.effects.lut_path = str(cube)
+    r, g, b = pixel(Compositor(p).render(1.0, 320, 180), 160, 90)
+    assert r < 30 and g > 220 and b > 220

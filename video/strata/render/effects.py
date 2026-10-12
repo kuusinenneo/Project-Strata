@@ -9,6 +9,7 @@ from __future__ import annotations
 import numpy as np
 
 from ..model.project import Effects
+from .lut import load_lut
 
 LUMA = np.array([0.299, 0.587, 0.114], dtype=np.float32)
 SEPIA = np.array([[0.393, 0.769, 0.189],
@@ -53,6 +54,10 @@ def apply_color(arr: np.ndarray, fx: Effects) -> np.ndarray:
         h, w = rgb.shape[:2]
         flat = rgb.reshape(-1, 3).astype(np.float32) @ m.T
         rgb = np.clip(flat, 0, 255).astype(np.uint8).reshape(h, w, 3)
+    if fx.lut_path and fx.lut_strength > 1e-6:
+        lut = load_lut(fx.lut_path)
+        if lut is not None:
+            rgb = lut.apply(np.ascontiguousarray(rgb), fx.lut_strength / 100.0)
     if arr.shape[2] == 4:
         out = np.empty_like(arr)
         out[..., :3] = rgb

@@ -497,3 +497,18 @@ def test_keyframe_controls(win, media_dir):
     assert len(c.clip(clip.id).transform.keyframes) == 1
     c.do_undo()
     assert len(c.clip(clip.id).transform.keyframes) == 2
+
+
+def test_lut_controls(win, media_dir, tmp_path):
+    c = win.controller
+    (vid,) = media(win, media_dir, "video.mp4")
+    c.add_media_to_timeline([vid.id], None, 0.0)
+    clip = next(x for x in c.project.sequence.clips.values() if x.kind == "video")
+    c.select([clip.id])
+    cube = tmp_path / "id.cube"
+    cube.write_text("LUT_3D_SIZE 2\n" + "\n".join(f"{r} {g} {b}" for b in (0, 1) for g in (0, 1) for r in (0, 1)))
+    assert win.effect_controls.load_lut_file(str(cube))
+    assert c.clip(clip.id).effects.lut_path == str(cube)
+    assert win.effect_controls.lut_label.text() == "id.cube"
+    win.effect_controls.lut_clear.click()
+    assert c.clip(clip.id).effects.lut_path == ""

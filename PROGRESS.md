@@ -23,6 +23,7 @@
   (old `.strata.json` files still open)
 - Video: Dip to Black and Wipe transitions (Effects panel + transition style in Effect Controls; cross dissolve already existed)
 - Video: keyframes for scale, position, rotation and opacity (plus a new Rotation control); diamonds on timeline clips; keyframes stay put when clips are split or trimmed
+- Video: 3D .cube LUT loading with strength (Effect Controls → Color & Blur); brightness/contrast/saturation already existed
 
 ### In progress
 - (none)

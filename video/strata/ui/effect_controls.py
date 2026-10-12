@@ -1,11 +1,12 @@
 """Effect Controls: edit the selected clip's motion, effects, transitions, audio and text."""
 from __future__ import annotations
 
+import os
 from typing import Callable, Optional
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor, QFont
-from PySide6.QtWidgets import (QCheckBox, QColorDialog, QComboBox, QDoubleSpinBox, QFontComboBox,
+from PySide6.QtWidgets import (QCheckBox, QColorDialog, QComboBox, QDoubleSpinBox, QFileDialog, QFontComboBox, QMessageBox,
                                QFormLayout, QGroupBox, QHBoxLayout, QLabel, QPlainTextEdit,
                                QPushButton, QScrollArea, QSlider, QVBoxLayout, QWidget)
 
@@ -162,6 +163,19 @@ class EffectControls(QWidget):
         self.bw = self._check(f, "Black && white", lambda c, v: setattr(c.effects, "black_white", v))
         self.sepia = self._check(f, "Sepia", lambda c, v: setattr(c.effects, "sepia", v))
         self.blur = self._num(f, "Blur", 0, 100, 0.5, 1, " px", lambda c, v: setattr(c.effects, "blur", v))
+        lut_row = QHBoxLayout()
+        self.lut_label = QLabel("None")
+        self.lut_label.setStyleSheet("color:#8c9098;")
+        lut_load = QPushButton("Load…")
+        lut_load.setToolTip("Apply a 3D colour lookup table (.cube)")
+        lut_load.clicked.connect(self._load_lut)
+        self.lut_clear = QPushButton("Clear")
+        self.lut_clear.clicked.connect(lambda: self._apply("lut", lambda c, _: setattr(c.effects, "lut_path", ""), None))
+        lut_row.addWidget(self.lut_label, 1)
+        lut_row.addWidget(lut_load)
+        lut_row.addWidget(self.lut_clear)
+        f.addRow("LUT", lut_row)
+        self.lut_strength = self._num(f, "LUT strength", 0, 100, 1, 0, " %", lambda c, v: setattr(c.effects, "lut_strength", v))
         f.addRow(self._reset_button("Reset effects", self._reset_effects))
 
         # -- Audio
@@ -338,6 +352,19 @@ class EffectControls(QWidget):
         if not self._loading and self.clip_id:
             self.controller.set_speed(self.clip_id, v)
 
+    def load_lut_file(self, path: str) -> bool:
+        from ..render.lut import load_lut
+        if load_lut(path) is None:
+            QMessageBox.warning(self, "LUT", f"Could not read a 3D .cube LUT from:\n{path}")
+            return False
+        self._apply("lut", lambda c, v: setattr(c.effects, "lut_path", v), path)
+        return True
+
+    def _load_lut(self) -> None:
+        path, _ = QFileDialog.getOpenFileName(self, "Load LUT", "", "3D LUT (*.cube)")
+        if path:
+            self.load_lut_file(path)
+
     @staticmethod
     def _reset_effects(c: Clip) -> None:
         c.effects = Effects()
@@ -404,11 +431,15 @@ class EffectControls(QWidget):
                      (self.pos_y_end, tr.pos_y_end), (self.opacity, mo["opacity"]),
                      (self.speed, clip.speed), (self.brightness, fx.brightness),
                      (self.contrast, fx.contrast), (self.saturation, fx.saturation),
-                     (self.blur, fx.blur), (self.fade_in, clip.fade_in),
+                     (self.blur, fx.blur), (self.lut_strength, fx.lut_strength), (self.fade_in, clip.fade_in),
                      (self.fade_out, clip.fade_out), (self.dissolve, clip.cross_dissolve)):
             w.setValue(v)
         if audio_targets:
             self.volume.setValue(audio_targets[0].volume)
+        self.lut_label.setText(os.path.basename(fx.lut_path) if fx.lut_path else "None")
+        self.lut_label.setToolTip(fx.lut_path)
+        self.lut_clear.setEnabled(bool(fx.lut_path))
+        self.lut_strength.setEnabled(bool(fx.lut_path))
         self.transition.setCurrentIndex(max(0, self.transition.findData(clip.transition)))
         for cb, v in ((self.animate, tr.animate), (self.bw, fx.black_white), (self.sepia, fx.sepia)):
             cb.blockSignals(True)
