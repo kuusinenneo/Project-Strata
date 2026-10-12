@@ -509,6 +509,75 @@ class EditorController(QObject):
             c.reverse = bool(reverse)
         self._done()
 
+    # ------------------------------------------------------------------ automatic editing
+    def remove_silence(self, clip_ids: Iterable[str], threshold_db: float = -40.0, min_silence: float = 0.5,
+                       padding: float = 0.1) -> float:
+        """Cut the silent parts out of these clips' audio (with their linked video) and close the
+        gaps. Returns the seconds removed."""
+        from ..media.analysis import silent_ranges
+        audio = []
+        for cid in clip_ids:
+            c = self.clip(cid)
+            if c is None:
+                continue
+            for x in [c] + self.seq.linked(c):
+                if x.kind == "audio" and x not in audio and not self.is_locked(x.track_id):
+                    audio.append(x)
+        if not audio:
+            self.message.emit("Select clips with audio to remove silence from")
+            return 0.0
+        plans = []
+        for a in audio:
+            media = self.project.media_for(a)
+            if media is None or not media.has_audio or not os.path.exists(media.path):
+                continue
+            data = self.audio_store.load_now(media.id, media.path)
+            if data is None:
+                continue
+            src0, src1 = min(a.in_point, a.out_point), max(a.in_point, a.out_point)
+            ranges = []
+            for s0, s1 in silent_ranges(data.samples, data.sample_rate, src0, src1, threshold_db, min_silence, padding):
+                t0, t1 = sorted((edits.source_to_timeline(a, s0), edits.source_to_timeline(a, s1)))
+                ranges.append((max(a.start, t0), min(a.end, t1)))
+            if ranges:
+                plans.append((a, ranges))
+        if not plans:
+            self.message.emit("No silence found with these settings")
+            return 0.0
+        self._push("Remove silence")
+        removed = 0.0
+        for a, ranges in sorted(plans, key=lambda p: p[0].start, reverse=True):
+            if a.id in self.seq.clips:
+                removed += edits.remove_ranges(self.seq, [a] + self.editable(self.seq.linked(a)), ranges)
+        self.selection.clear()
+        self._done()
+        self.message.emit(f"Removed {removed:.1f} s of silence")
+        return removed
+
+    def detect_scenes(self, clip_id: str, threshold: float = 27.0, progress=None) -> int:
+        """Razor a video clip (and its linked audio) at every scene change. Returns the cuts made."""
+        from ..media.analysis import scene_cuts
+        clip = self.clip(clip_id)
+        if clip is None or clip.kind != "video" or self.is_locked(clip.track_id):
+            self.message.emit("Select a video clip to detect scenes in")
+            return 0
+        media = self.project.media_for(clip)
+        if media is None or media.kind != "video" or not os.path.exists(media.path):
+            self.message.emit("Scene detection needs a video file")
+            return 0
+        src0, src1 = min(clip.in_point, clip.out_point), max(clip.in_point, clip.out_point)
+        cuts = scene_cuts(media.path, src0, src1, threshold, progress=progress)
+        times = [edits.source_to_timeline(clip, s) for s in cuts]
+        times = [t for t in times if clip.start + 0.05 < t < clip.end - 0.05]
+        if not times:
+            self.message.emit("No scene changes found")
+            return 0
+        self._push("Detect scenes")
+        n = edits.split_at_times(self.seq, [clip] + self.editable(self.seq.linked(clip)), times)
+        self._done()
+        self.message.emit(f"Cut at {n} scene change{'s' if n != 1 else ''}")
+        return n
+
     def apply_effect(self, clip_id: str, effect: str, at_time: Optional[float] = None) -> bool:
         """Apply an effect/transition dragged from the Effects panel."""
         clip = self.clip(clip_id)

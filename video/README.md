@@ -132,6 +132,12 @@ rendering, export and headless UI interactions.
    estimated file size updates as you change settings, and the progress bar shows the
    time remaining with a cancel button.
 
+**Automatic editing** (Clip menu): *Remove Silence…* cuts quiet parts (below a dB level, longer
+than a minimum length, keeping a little padding) out of the selected clips and their linked video
+and closes the gaps; *Detect Scenes and Cut…* razors a video clip at every scene change. Scene
+detection uses [PySceneDetect](https://www.scenedetect.com/) when it is installed
+(`pip install -r requirements-extras.txt`) and a built-in frame-difference detector otherwise.
+
 **4K footage:** importing video of 2000+ lines starts building a 540p *playback proxy* in the
 background (cached in `%LOCALAPPDATA%\Strata Video\proxies`). The monitors switch to it as soon as
 it is ready, so scrubbing and playback stay smooth; export always uses the original files.

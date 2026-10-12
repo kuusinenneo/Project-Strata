@@ -196,3 +196,27 @@ def test_reverse_clip_editing():
     edits.trim_start(c, 11.0)
     assert (c.start, c.out_point) == pytest.approx((11.0, 4.0))
     assert c.source_time(11.0) == pytest.approx(4.0)  # content stays anchored
+
+
+def test_remove_ranges_and_split_at_times():
+    from strata.model.project import Clip
+    seq = Project().sequence
+    v = seq.video_tracks[0].id
+    a = seq.audio_tracks[0].id
+    vid = Clip(kind="video", track_id=v, start=0, in_point=0, out_point=10, link_id="L")
+    aud = Clip(kind="audio", track_id=a, start=0, in_point=0, out_point=10, link_id="L")
+    after = Clip(kind="video", track_id=v, start=10, in_point=0, out_point=2)
+    for c in (vid, aud, after):
+        seq.clips[c.id] = c
+    removed = edits.remove_ranges(seq, [vid, aud], [(2, 3), (6, 8)])
+    assert removed == pytest.approx(3)
+    vs = sorted((c.start, c.end, c.in_point) for c in seq.clips_on(v))
+    assert vs == [pytest.approx((0, 2, 0)), pytest.approx((2, 5, 3)), pytest.approx((5, 7, 8)), pytest.approx((7, 9, 0))]
+    assert len(seq.clips_on(a)) == 3  # audio cut the same way
+    assert edits.source_to_timeline(seq.clips_on(v)[1], 4.0) == pytest.approx(3.0)
+    # razor at scene times
+    seq2 = Project().sequence
+    c = Clip(kind="video", track_id=seq2.video_tracks[0].id, start=0, in_point=0, out_point=6)
+    seq2.clips[c.id] = c
+    assert edits.split_at_times(seq2, [c], [2.0, 4.0]) == 2
+    assert [round(x.start) for x in seq2.clips_on(seq2.video_tracks[0].id)] == [0, 2, 4]

@@ -6,9 +6,9 @@ from typing import Optional
 
 from PySide6.QtCore import QSettings, Qt, QTimer
 from PySide6.QtGui import QAction, QIcon, QKeySequence
-from PySide6.QtWidgets import (QComboBox, QDialog, QDialogButtonBox, QDockWidget,
-                               QFileDialog, QFormLayout, QMainWindow, QMessageBox,
-                               QSpinBox, QTabWidget, QTextBrowser, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QApplication, QComboBox, QDialog, QDialogButtonBox, QDockWidget,
+                               QDoubleSpinBox, QFileDialog, QFormLayout, QLabel, QMainWindow, QMessageBox,
+                               QProgressDialog, QSpinBox, QTabWidget, QTextBrowser, QVBoxLayout, QWidget)
 
 from .. import APP_NAME, __version__
 from ..media.ffmpeg import ffmpeg_version, find_ffmpeg
@@ -297,6 +297,8 @@ class MainWindow(QMainWindow):
         self.a_snap.setChecked(c.snapping)
         c.snapping_changed.connect(self.a_snap.setChecked)
         self.a_clear_marks = A("Clear In/Out", lambda: self.active_monitor.clear_marks(), "Ctrl+Shift+X")
+        self.a_remove_silence = A("Remove &Silence…", self.remove_silence_dialog)
+        self.a_detect_scenes = A("Detect Scenes and &Cut…", self.detect_scenes_dialog)
         self.a_send_frame = A("Send Frame to Strata &Photo", self.send_frame_to_photo, "Ctrl+Shift+P")
 
         self.a_play = A("Play / Pause", lambda: self.active_monitor.toggle_play(), "Space", "play")
@@ -332,7 +334,7 @@ class MainWindow(QMainWindow):
             m.addSeparator() if a is None else m.addAction(a)
         m = mb.addMenu("&Clip")
         for a in (self.a_cut, self.a_join, None, self.a_link, self.a_unlink, self.a_linked_sel, None,
-                  self.a_text):
+                  self.a_text, None, self.a_remove_silence, self.a_detect_scenes):
             m.addSeparator() if a is None else m.addAction(a)
         m = mb.addMenu("&Sequence")
         for a in (self.a_seq_settings, None, self.a_add_v, self.a_add_a, None, self.a_zoom_in,
@@ -417,6 +419,76 @@ class MainWindow(QMainWindow):
         self.settings.setValue("use_proxies", self.controller.use_proxies)
         self.program.request_render()
         self.controller.message.emit("Playing from proxies" if self.controller.use_proxies else "Playing from original media")
+
+    # ------------------------------------------------------------------ automatic editing
+    def _ask_values(self, title: str, intro: str, fields) -> Optional[list[float]]:
+        """Small dialog of labelled number fields: fields = [(label, value, lo, hi, step, decimals, suffix)]."""
+        dlg = QDialog(self)
+        dlg.setWindowTitle(title)
+        form = QFormLayout(dlg)
+        info = QLabel(intro)
+        info.setWordWrap(True)
+        form.addRow(info)
+        spins = []
+        for label, value, lo, hi, step, dec, suffix in fields:
+            sp = QDoubleSpinBox()
+            sp.setRange(lo, hi)
+            sp.setDecimals(dec)
+            sp.setSingleStep(step)
+            sp.setSuffix(suffix)
+            sp.setValue(value)
+            form.addRow(label, sp)
+            spins.append(sp)
+        bb = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        bb.accepted.connect(dlg.accept)
+        bb.rejected.connect(dlg.reject)
+        form.addRow(bb)
+        if dlg.exec() != QDialog.Accepted:
+            return None
+        return [s.value() for s in spins]
+
+    def remove_silence_dialog(self) -> None:
+        c = self.controller
+        ids = list(c.selection) or [x.id for x in c.project.sequence.clips.values() if x.kind == "audio"]
+        if not ids:
+            QMessageBox.information(self, "Remove Silence", "Add clips with audio to the timeline first.")
+            return
+        vals = self._ask_values(
+            "Remove Silence",
+            "Cuts quiet parts out of the selected clips (or all audio clips if nothing is selected), "
+            "together with their linked video, and closes the gaps.",
+            [("Silence below", -40, -80, -10, 1, 0, " dB"), ("Shortest silence", 0.5, 0.1, 10, 0.1, 2, " s"),
+             ("Keep around speech", 0.1, 0, 2, 0.05, 2, " s")])
+        if vals is None:
+            return
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+        try:
+            c.remove_silence(ids, vals[0], vals[1], vals[2])
+        finally:
+            QApplication.restoreOverrideCursor()
+
+    def detect_scenes_dialog(self) -> None:
+        c = self.controller
+        clip = c.primary_selected()
+        if clip is None or clip.kind != "video":
+            QMessageBox.information(self, "Detect Scenes", "Select a video clip in the timeline first.")
+            return
+        vals = self._ask_values("Detect Scenes", "Cuts the clip (and its linked audio) at every scene change.",
+                                [("Sensitivity threshold", 27, 5, 100, 1, 0, "  (lower = more cuts)")])
+        if vals is None:
+            return
+        progress = QProgressDialog("Looking for scene changes…", "", 0, 100, self)
+        progress.setCancelButton(None)
+        progress.setWindowTitle("Detect Scenes")
+        progress.setMinimumDuration(300)
+
+        def on_progress(f: float) -> None:
+            progress.setValue(int(f * 100))
+            QApplication.processEvents()
+        try:
+            c.detect_scenes(clip.id, vals[0], on_progress)
+        finally:
+            progress.close()
 
     # ------------------------------------------------------------------ suite
     def export_current_frame(self, folder: Optional[str] = None) -> str:

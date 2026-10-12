@@ -31,6 +31,7 @@
 - PDF: StrataPdf.Core: workspace model (merge, reorder, rotate, delete, undo/redo), annotations (highlight, pen, text box, shapes/arrows, sticky notes, image signatures), page numbers, watermarks, saving with PDFsharp, extract pages, real redaction (page re-rendered as image with the area burned out), strong compression, form fill, image extraction; 15 tests
 - PDF: Strata PDF app (Avalonia, Strata look): continuous viewer with thumbnails, zoom, navigation; merge/split/reorder (drag thumbnails)/rotate/delete; highlight, pen, text, shapes, arrows, sticky notes; drawn or image signatures; form filling; page numbers and watermarks; real redaction; compression; extract images to Strata Photo; undo/redo; save/save as; pdf/build.bat (self-contained exe + self-test)
 - Suite: Strata Video → Sequence → Send Frame to Strata Photo (Ctrl+Shift+P): renders the playhead frame at full resolution and opens it in Strata Photo; Strata PDF → File → Extract Images to Strata Photo
+- Video: Clip > Remove Silence (dB threshold, minimum length, padding; cuts linked video too and closes gaps) and Clip > Detect Scenes and Cut (PySceneDetect if installed, built-in detector otherwise)
 
 ### In progress
 - (none)

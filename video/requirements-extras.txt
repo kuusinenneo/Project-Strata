@@ -1,0 +1,4 @@
+# Optional extras for Strata Video. Not needed to run or build the app.
+-r requirements.txt
+scenedetect>=0.6         # PySceneDetect: used for Clip > Detect Scenes when installed (built-in detector otherwise)
+opencv-python-headless   # needed by PySceneDetect

@@ -251,6 +251,46 @@ def ripple_delete(seq: Sequence, clip_ids: Iterable[str]) -> None:
         _ripple_close(seq, c.track_id, c.start, c.end)
 
 
+def source_to_timeline(clip: Clip, src: float) -> float:
+    """Timeline time at which ``clip`` shows source time ``src`` (inverse of ``source_time``)."""
+    if clip.reverse:
+        return clip.start + (clip.out_point - src) / clip.speed
+    return clip.start + (src - clip.in_point) / clip.speed
+
+
+def remove_ranges(seq: Sequence, clips: Iterable[Clip], ranges: Iterable[tuple[float, float]]) -> float:
+    """Cut timeline ranges out of ``clips`` (pass a clip together with its linked partners) and
+    close each gap on their tracks. Returns the total time removed."""
+    family = {c.id for c in clips}
+    removed = 0.0
+    for a, b in sorted(ranges, reverse=True):  # right to left: earlier ranges don't move
+        if b - a < EPS:
+            continue
+        def pieces():
+            return [seq.clips[i] for i in family if i in seq.clips
+                    and seq.clips[i].start < b - EPS and seq.clips[i].end > a + EPS]
+        for t in (b, a):
+            family.update(r.id for r in split_at(seq, t, pieces()))
+        middle = [c.id for c in pieces() if c.start >= a - 1e-4 and c.end <= b + 1e-4]
+        if middle:
+            removed += b - a
+            ripple_delete(seq, middle)
+            family.difference_update(middle)
+    return removed
+
+
+def split_at_times(seq: Sequence, clips: Iterable[Clip], times: Iterable[float]) -> int:
+    """Razor ``clips`` (and the pieces they become) at each time. Returns the number of cuts."""
+    family = {c.id for c in clips}
+    cuts = 0
+    for t in sorted(times):
+        covering = [seq.clips[i] for i in family if i in seq.clips and seq.clips[i].contains(t)]
+        created = split_at(seq, t, covering)
+        family.update(r.id for r in created)
+        cuts += 1 if created else 0
+    return cuts
+
+
 def _ripple_close(seq: Sequence, track_id: str, start: float, end: float) -> None:
     # Clips on one track never overlap, so the freed span is exactly [start, end).
     gap = end - start
