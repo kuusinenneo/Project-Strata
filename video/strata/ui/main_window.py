@@ -4,7 +4,7 @@ from __future__ import annotations
 import os
 from typing import Optional
 
-from PySide6.QtCore import QSettings, Qt, QTimer
+from PySide6.QtCore import QSettings, Qt, QThread, QTimer, Signal
 from PySide6.QtGui import QAction, QIcon, QKeySequence
 from PySide6.QtWidgets import (QApplication, QComboBox, QDialog, QDialogButtonBox, QDockWidget,
                                QDoubleSpinBox, QFileDialog, QFormLayout, QLabel, QMainWindow, QMessageBox,
@@ -119,6 +119,37 @@ class SequenceSettingsDialog(QDialog):
         except ValueError:
             fps = 30.0
         return self.w.value(), self.h.value(), max(1.0, min(240.0, fps))
+
+
+class SubtitleJob(QThread):
+    """Runs faster-whisper off the UI thread."""
+    progress = Signal(float)
+    done = Signal(object, object)  # results dict, error message
+
+    def __init__(self, jobs, model_size: str, language, parent=None):
+        super().__init__(parent)
+        self.jobs = jobs
+        self.model_size = model_size
+        self.language = language
+        self.is_cancelled = False
+
+    def cancel(self) -> None:
+        self.is_cancelled = True
+
+    def run(self) -> None:
+        from ..media.transcribe import transcribe_file
+        results = {}
+        try:
+            for i, (cid, path, s0, s1) in enumerate(self.jobs):
+                if self.is_cancelled:
+                    break
+                n = len(self.jobs)
+                results[cid] = transcribe_file(
+                    path, s0, s1, self.model_size, self.language,
+                    progress=lambda f, i=i: self.progress.emit((i + f) / n), cancelled=lambda: self.is_cancelled)
+            self.done.emit(results, None)
+        except Exception as exc:  # e.g. no internet for the first model download
+            self.done.emit({}, str(exc))
 
 
 class MainWindow(QMainWindow):
@@ -299,6 +330,7 @@ class MainWindow(QMainWindow):
         self.a_clear_marks = A("Clear In/Out", lambda: self.active_monitor.clear_marks(), "Ctrl+Shift+X")
         self.a_remove_silence = A("Remove &Silence…", self.remove_silence_dialog)
         self.a_detect_scenes = A("Detect Scenes and &Cut…", self.detect_scenes_dialog)
+        self.a_subtitles = A("Auto S&ubtitles…", self.auto_subtitles_dialog)
         self.a_send_frame = A("Send Frame to Strata &Photo", self.send_frame_to_photo, "Ctrl+Shift+P")
 
         self.a_play = A("Play / Pause", lambda: self.active_monitor.toggle_play(), "Space", "play")
@@ -334,7 +366,7 @@ class MainWindow(QMainWindow):
             m.addSeparator() if a is None else m.addAction(a)
         m = mb.addMenu("&Clip")
         for a in (self.a_cut, self.a_join, None, self.a_link, self.a_unlink, self.a_linked_sel, None,
-                  self.a_text, None, self.a_remove_silence, self.a_detect_scenes):
+                  self.a_text, None, self.a_remove_silence, self.a_detect_scenes, self.a_subtitles):
             m.addSeparator() if a is None else m.addAction(a)
         m = mb.addMenu("&Sequence")
         for a in (self.a_seq_settings, None, self.a_add_v, self.a_add_a, None, self.a_zoom_in,
@@ -489,6 +521,66 @@ class MainWindow(QMainWindow):
             c.detect_scenes(clip.id, vals[0], on_progress)
         finally:
             progress.close()
+
+    def auto_subtitles_dialog(self) -> None:
+        from ..media import transcribe
+        c = self.controller
+        if not transcribe.available():
+            QMessageBox.information(
+                self, "Auto Subtitles",
+                "Auto subtitles use faster-whisper, which is not installed.\n\n"
+                "From the video folder run:\n    pip install -r requirements-ai.txt\n\n"
+                "The first run downloads the speech model (75-480 MB depending on the size); "
+                "after that it works offline.")
+            return
+        jobs = c.subtitle_jobs(list(c.selection))
+        if not jobs:
+            QMessageBox.information(self, "Auto Subtitles", "Add clips with audio to the timeline first.")
+            return
+        dlg = QDialog(self)
+        dlg.setWindowTitle("Auto Subtitles")
+        form = QFormLayout(dlg)
+        info = QLabel(f"Transcribes {len(jobs)} audio clip(s) on this computer and adds the text as subtitles "
+                      "on a new track. Bigger models are more accurate but slower.")
+        info.setWordWrap(True)
+        form.addRow(info)
+        model = QComboBox()
+        for m in transcribe.MODEL_SIZES:
+            model.addItem(m, m)
+        model.setCurrentIndex(1)
+        form.addRow("Model", model)
+        lang = QComboBox()
+        lang.setEditable(True)
+        for code, name in (("", "Detect automatically"), ("en", "English"), ("fi", "Finnish"), ("sv", "Swedish"),
+                           ("de", "German"), ("fr", "French"), ("es", "Spanish")):
+            lang.addItem(name, code)
+        form.addRow("Language", lang)
+        bb = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        bb.accepted.connect(dlg.accept)
+        bb.rejected.connect(dlg.reject)
+        form.addRow(bb)
+        if dlg.exec() != QDialog.Accepted:
+            return
+        language = lang.currentData() if lang.currentIndex() >= 0 and lang.currentText() == lang.itemText(lang.currentIndex()) \
+            else lang.currentText().strip()
+
+        progress = QProgressDialog("Transcribing… (the first run downloads the model)", "Cancel", 0, 100, self)
+        progress.setWindowTitle("Auto Subtitles")
+        progress.setMinimumDuration(0)
+        progress.setValue(0)
+        job = SubtitleJob(jobs, model.currentData(), language or None)
+        job.progress.connect(lambda f: progress.setValue(int(f * 100)))
+        progress.canceled.connect(job.cancel)
+
+        def finished(results, error):
+            progress.close()
+            if error:
+                QMessageBox.critical(self, "Auto Subtitles", f"Transcription failed:\n{error}")
+            elif not job.is_cancelled:
+                c.add_subtitles(results)
+        job.done.connect(finished)
+        self._subtitle_job = job
+        job.start()
 
     # ------------------------------------------------------------------ suite
     def export_current_frame(self, folder: Optional[str] = None) -> str:

@@ -1,6 +1,7 @@
 # PyInstaller spec for Strata Video (Windows, onedir, windowed).
 # Build with:  build.bat   (or: python -m PyInstaller strata.spec --noconfirm --clean)
 import datetime
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -106,7 +107,10 @@ a = Analysis(
     hookspath=[],
     runtime_hooks=[],
     # imageio_ffmpeg would ship a second copy of FFmpeg; the app uses the bundled one.
-    excludes=["imageio_ffmpeg", "tkinter", "pytest", "PyQt5", "PyQt6",
+    # Optional AI extras (auto subtitles) are left out unless STRATA_BUNDLE_AI=1: they add ~200 MB.
+    excludes=([] if os.environ.get("STRATA_BUNDLE_AI") == "1" else
+              ["faster_whisper", "ctranslate2", "onnxruntime", "tokenizers", "huggingface_hub"]) + [
+              "imageio_ffmpeg", "tkinter", "pytest", "PyQt5", "PyQt6",
               "PySide6.QtWebEngineCore", "PySide6.QtWebEngineWidgets", "PySide6.QtPdf",
               "PySide6.Qt3DCore", "PySide6.QtQuick", "PySide6.QtQml"],
     noarchive=False,

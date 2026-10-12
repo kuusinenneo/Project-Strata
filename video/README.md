@@ -138,6 +138,13 @@ and closes the gaps; *Detect Scenes and Cut…* razors a video clip at every sce
 detection uses [PySceneDetect](https://www.scenedetect.com/) when it is installed
 (`pip install -r requirements-extras.txt`) and a built-in frame-difference detector otherwise.
 
+**Auto subtitles** (*Clip → Auto Subtitles…*): transcribes the selected audio clips (or all of
+them) on your computer with [faster-whisper](https://github.com/SYSTRAN/faster-whisper) and puts the
+text on a new *Subtitles* track as subtitle-style text clips (one undo step). It is optional:
+`pip install -r requirements-ai.txt`. The first run downloads the chosen model (tiny ≈ 75 MB,
+base ≈ 145 MB, small ≈ 480 MB); after that it runs offline. The packaged exe leaves it out to stay
+small; build with `set STRATA_BUNDLE_AI=1` before `build.bat` to include it (≈ +200 MB).
+
 **4K footage:** importing video of 2000+ lines starts building a 540p *playback proxy* in the
 background (cached in `%LOCALAPPDATA%\Strata Video\proxies`). The monitors switch to it as soon as
 it is ready, so scrubbing and playback stay smooth; export always uses the original files.

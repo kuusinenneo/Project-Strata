@@ -554,6 +554,59 @@ class EditorController(QObject):
         self.message.emit(f"Removed {removed:.1f} s of silence")
         return removed
 
+    def subtitle_jobs(self, clip_ids: Iterable[str]) -> list[tuple[str, str, float, float]]:
+        """What to transcribe: (clip id, media path, source start, source end) per audio clip
+        (selected clips and their linked audio; all audio clips when nothing is given)."""
+        ids = list(clip_ids) or [c.id for c in self.seq.clips.values() if c.kind == "audio"]
+        jobs, seen = [], set()
+        for cid in ids:
+            c = self.clip(cid)
+            if c is None:
+                continue
+            for x in [c] + self.seq.linked(c):
+                media = self.project.media_for(x)
+                if x.kind != "audio" or x.id in seen or x.reverse or media is None or not os.path.exists(media.path):
+                    continue
+                seen.add(x.id)
+                jobs.append((x.id, media.path, x.in_point, x.out_point))
+        return jobs
+
+    def add_subtitles(self, results: dict[str, list[tuple[float, float, str]]]) -> int:
+        """Put transcribed segments (source times per clip id) on a new top video track as
+        subtitle text clips, as one undo step. Returns the number of clips made."""
+        items = []
+        for cid, segments in results.items():
+            c = self.clip(cid)
+            if c is None:
+                continue
+            for s0, s1, text in segments:
+                t0 = max(c.start, edits.source_to_timeline(c, s0))
+                t1 = min(c.end, edits.source_to_timeline(c, s1))
+                if t1 - t0 > 0.05:
+                    items.append((t0, t1, text))
+        if not items:
+            self.message.emit("No speech was recognised")
+            return 0
+        items.sort()
+        self._push("Auto subtitles")
+        track = self.seq.add_track("video")
+        track.name = "Subtitles"
+        for i, (t0, t1, text) in enumerate(items):
+            nxt = items[i + 1][0] if i + 1 < len(items) else t1 + 10
+            dur = max(0.4, min(t1, nxt) - t0)
+            clip = edits.make_text_clip(track.id, t0, text, "subtitle", dur)
+            self.seq.clips[clip.id] = clip
+        self._done()
+        self.message.emit(f"Added {len(items)} subtitle{'s' if len(items) != 1 else ''} on track {track.name}")
+        return len(items)
+
+    def auto_subtitles(self, clip_ids: Iterable[str], model_size: str = "base", language=None) -> int:
+        """Transcribe and add subtitles in one go (blocking; the UI runs the transcription in a thread)."""
+        from ..media.transcribe import transcribe_file
+        results = {cid: transcribe_file(path, s0, s1, model_size, language)
+                   for cid, path, s0, s1 in self.subtitle_jobs(clip_ids)}
+        return self.add_subtitles(results)
+
     def detect_scenes(self, clip_id: str, threshold: float = 27.0, progress=None) -> int:
         """Razor a video clip (and its linked audio) at every scene change. Returns the cuts made."""
         from ..media.analysis import scene_cuts

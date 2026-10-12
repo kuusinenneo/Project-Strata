@@ -1,0 +1,5 @@
+# Optional: automatic subtitles (Clip > Auto Subtitles) with faster-whisper running locally.
+# The first use downloads the chosen speech model (tiny ~75 MB ... small ~480 MB).
+# Not bundled into the exe unless you build with  set STRATA_BUNDLE_AI=1  (adds ~200 MB).
+-r requirements.txt
+faster-whisper>=1.0
