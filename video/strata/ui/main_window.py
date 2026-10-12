@@ -197,6 +197,8 @@ class MainWindow(QMainWindow):
         self.autosave_timer.setInterval(AUTOSAVE_INTERVAL_MS)
         self.autosave_timer.timeout.connect(self.autosave_now)
         self.autosave_timer.start()
+        self.controller.use_proxies = self.settings.value("use_proxies", True, type=bool)
+        self.a_proxies.setChecked(self.controller.use_proxies)
 
     # ------------------------------------------------------------------ docks
     def _dock(self, title: str, widget: QWidget, name: str) -> QDockWidget:
@@ -309,6 +311,10 @@ class MainWindow(QMainWindow):
         self.a_insert = A("Insert Source at Playhead", lambda: self._source_edit(None, True), ",")
         self.a_overwrite = A("Overwrite Source at Playhead", lambda: self._source_edit(None, False), ".")
 
+        self.a_proxies = A("Use &Proxies for Playback", self._toggle_proxies)
+        self.a_proxies.setCheckable(True)
+        self.a_proxies.setChecked(self.controller.use_proxies)
+        self.a_proxies.setToolTip("Play 4K footage from small proxy files (export always uses the originals)")
         self.a_reset_layout = A("&Reset Layout", self.apply_default_layout)
         self.a_shortcuts = A("Keyboard &Shortcuts", self.show_shortcuts, "F1")
         self.a_about = A(f"&About {APP_NAME}", self.show_about)
@@ -336,7 +342,8 @@ class MainWindow(QMainWindow):
             m.addAction(a)
         m = mb.addMenu("&Playback")
         for a in (self.a_play, self.a_j, self.a_k, self.a_l, None, self.a_in, self.a_out, None,
-                  self.a_prev, self.a_next, self.a_home, self.a_end, None, self.a_insert, self.a_overwrite):
+                  self.a_prev, self.a_next, self.a_home, self.a_end, None, self.a_insert, self.a_overwrite,
+                  None, self.a_proxies):
             m.addSeparator() if a is None else m.addAction(a)
         m = mb.addMenu("&Window")
         for d in self.docks:
@@ -402,6 +409,12 @@ class MainWindow(QMainWindow):
             self.project_panel.remove_selected()
         else:
             self.controller.delete_selection()
+
+    def _toggle_proxies(self) -> None:
+        self.controller.use_proxies = self.a_proxies.isChecked()
+        self.settings.setValue("use_proxies", self.controller.use_proxies)
+        self.program.request_render()
+        self.controller.message.emit("Playing from proxies" if self.controller.use_proxies else "Playing from original media")
 
     # ------------------------------------------------------------------ autosave / recovery
     def autosave_now(self) -> bool:
@@ -554,6 +567,7 @@ class MainWindow(QMainWindow):
             return
         self.program.shutdown()
         self.source.shutdown()
+        self.controller.proxy_worker.stop()
         self.audio.stop()
         self.settings.setValue("geometry", self.saveGeometry())
         self.autosave_timer.stop()

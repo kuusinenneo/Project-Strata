@@ -359,7 +359,7 @@ class SourceMonitor(MonitorPanel):
         self.title_label.setText(f"Source: {media.name}")
         if media.kind == "video":
             try:
-                self._decoder = VideoDecoder(media.path)
+                self._decoder = VideoDecoder(self.controller.proxy_path(media.path) or media.path)
             except Exception:
                 self._decoder = None
         elif media.kind == "image":
@@ -488,7 +488,8 @@ class ProgramMonitor(MonitorPanel):
         super().__init__(audio, "Program: Sequence", parent)
         self.controller = controller
         self.mixer = mixer
-        self.compositor = Compositor(controller.project)
+        self.compositor = Compositor(controller.project, proxy_lookup=controller.proxy_path)
+        controller.proxy_ready.connect(lambda _src: self.request_render())
         self._snapshot: Optional[Project] = None
         self.view.placeholder = ""
         controller.project_changed.connect(self._project_changed)

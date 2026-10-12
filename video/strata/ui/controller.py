@@ -13,10 +13,12 @@ from PySide6.QtCore import QObject, Signal
 
 from ..media.audio import AudioStore
 from ..media.probe import ProbeError, probe
+from ..media.proxy import MIN_SOURCE_HEIGHT, ProxyStore, ProxyWorker, needs_proxy
 from ..model import edits
 from ..model.io import load_project, save_project
 from ..model.project import EPS, Clip, MediaItem, Project, Track
 from ..model.undo import UndoStack
+from ..resources import user_data_dir
 
 TOOLS = ("select", "razor", "ripple", "text")
 
@@ -33,6 +35,8 @@ class EditorController(QObject):
     audio_loaded = Signal(str)  # media id (emitted from worker threads; queued)
     history_changed = Signal()
     message = Signal(str)
+    proxy_ready = Signal(str)  # source media path whose playback proxy just finished
+    _proxy_done = Signal(str, object, object)  # worker thread -> UI thread
 
     def __init__(self, parent: Optional[QObject] = None):
         super().__init__(parent)
@@ -46,6 +50,33 @@ class EditorController(QObject):
         self.linked_selection = True
         self.audio_store = AudioStore()
         self.audio_store.listeners.append(self.audio_loaded.emit)
+        # Low-res proxies for 4K footage, built in the background and used only for preview.
+        self.use_proxies = True
+        self.proxy_min_height = MIN_SOURCE_HEIGHT
+        self.proxy_store = ProxyStore(os.environ.get("STRATA_PROXY_DIR") or str(user_data_dir() / "proxies"))
+        self._proxy_done.connect(self._on_proxy_done)
+        self.proxy_worker = ProxyWorker(self.proxy_store, self._proxy_done.emit)
+
+    # ------------------------------------------------------------------ proxies
+    def proxy_path(self, src: str) -> Optional[str]:
+        """Playback proxy to decode instead of ``src`` (None = use the original)."""
+        return self.proxy_store.get(src) if self.use_proxies else None
+
+    def request_proxies(self, media: Iterable[MediaItem]) -> int:
+        n = 0
+        for m in media:
+            if needs_proxy(m, self.proxy_min_height) and os.path.exists(m.path) and self.proxy_worker.request(m.path):
+                n += 1
+                self.message.emit(f"Creating a playback proxy for {m.name or os.path.basename(m.path)}…")
+        return n
+
+    def _on_proxy_done(self, src: str, path, error) -> None:
+        name = os.path.basename(src)
+        if path:
+            self.message.emit(f"Playback proxy ready for {name}")
+            self.proxy_ready.emit(src)
+        else:
+            self.message.emit(f"Could not create a proxy for {name}: {error}")
 
     # ------------------------------------------------------------------ helpers
     @property
@@ -98,6 +129,7 @@ class EditorController(QObject):
         for m in proj.media.values():
             if m.has_audio and os.path.exists(m.path):
                 self.audio_store.request(m.id, m.path)
+        self.request_proxies(proj.media.values())
         from ..model.io import missing_media
         return missing_media(proj)
 
@@ -225,6 +257,7 @@ class EditorController(QObject):
             added.extend(items)
             self.media_changed.emit()
             self.history_changed.emit()
+            self.request_proxies(items)
         return added, errors
 
     def remove_media(self, media_ids: Iterable[str]) -> None:

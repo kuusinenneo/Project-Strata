@@ -12,6 +12,7 @@ from strata.ui.timeline import RULER_H
 def win(qapp, media_dir, tmp_path, monkeypatch):
     monkeypatch.setenv("APPDATA", str(tmp_path))  # keep QSettings out of the real profile
     monkeypatch.setenv("STRATA_AUTOSAVE_DIR", str(tmp_path / "autosave"))
+    monkeypatch.setenv("STRATA_PROXY_DIR", str(tmp_path / "proxies"))
     from strata.ui.main_window import MainWindow
     from strata.ui.theme import apply_dark_theme
     apply_dark_theme(qapp)
@@ -526,3 +527,26 @@ def test_export_presets_in_dialog(win, media_dir):
     dlg.quality.setCurrentIndex(0)  # editing a field makes it a custom setting
     assert dlg.preset.currentData() is None
     assert "1080×1080" in dlg.summary.text()
+
+
+def test_background_proxies_used_for_preview(win, media_dir, qapp):
+    import time
+    c = win.controller
+    c.proxy_min_height = 200  # treat the 240p test clip as "4K"
+    ready = []
+    c.proxy_ready.connect(ready.append)
+    (vid,) = media(win, media_dir, "video.mp4")
+    deadline = time.time() + 60
+    while not ready and time.time() < deadline:
+        qapp.processEvents()
+        time.sleep(0.05)
+    assert ready == [vid.path]
+    proxy = c.proxy_path(vid.path)
+    assert proxy and proxy != vid.path
+    c.add_media_to_timeline([vid.id], None, 0.0)
+    comp = win.program.compositor
+    comp.project = c.project  # the monitor normally renders from a snapshot of this
+    comp.render(0.5, 160, 120)
+    assert any(k.endswith("|" + proxy) for k in comp.pool._items)
+    c.use_proxies = False
+    assert c.proxy_path(vid.path) is None  # export and "proxies off" use the original

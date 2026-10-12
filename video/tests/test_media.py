@@ -82,3 +82,19 @@ def test_decoder_fast_mode_then_exact(media_dir, tmp_path):
     exact = dec.frame_at(2.0)
     assert abs(dec._cur_t - 2.0) < 0.05 and exact is not None
     dec.close()
+
+
+def test_proxy_store_builds_small_proxy(media_dir, tmp_path):
+    from types import SimpleNamespace
+    from strata.media.proxy import ProxyStore, needs_proxy
+    src = str(media_dir / "video.mp4")
+    store = ProxyStore(str(tmp_path / "px"), height=120)
+    assert store.get(src) is None
+    out = store.build(src)
+    assert store.get(src) == out
+    m = probe(out)
+    assert m.height == 120 and m.has_video and not m.has_audio
+    big = SimpleNamespace(kind="video", has_video=True, width=3840, height=2160)
+    small = SimpleNamespace(kind="video", has_video=True, width=1920, height=1080)
+    assert needs_proxy(big) and not needs_proxy(small)
+    assert not needs_proxy(SimpleNamespace(kind="image", has_video=False, width=8000, height=6000))

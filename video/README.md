@@ -132,6 +132,11 @@ rendering, export and headless UI interactions.
    estimated file size updates as you change settings, and the progress bar shows the
    time remaining with a cancel button.
 
+**4K footage:** importing video of 2000+ lines starts building a 540p *playback proxy* in the
+background (cached in `%LOCALAPPDATA%\Strata Video\proxies`). The monitors switch to it as soon as
+it is ready, so scrubbing and playback stay smooth; export always uses the original files.
+*Playback → Use Proxies for Playback* turns this off.
+
 Panels can be dragged, tabbed, floated and closed; *Window → Reset Layout* restores the
 default arrangement. *Help → Keyboard Shortcuts* (F1) lists every shortcut.
 

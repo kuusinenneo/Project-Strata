@@ -11,7 +11,7 @@ The same code renders the Program monitor preview (small size) and the export
 from __future__ import annotations
 
 from collections import OrderedDict
-from typing import Optional
+from typing import Callable, Optional
 
 import numpy as np
 from PySide6.QtCore import QRectF, Qt
@@ -114,8 +114,11 @@ def _array_from_qimage(img: QImage) -> np.ndarray:
 
 
 class Compositor:
-    def __init__(self, project: Project, decoder_capacity: int = 12):
+    def __init__(self, project: Project, decoder_capacity: int = 12,
+                 proxy_lookup: Optional[Callable[[str], Optional[str]]] = None):
         self.project = project
+        # Preview passes a lookup that returns a low-res proxy path for big media; export doesn't.
+        self.proxy_lookup = proxy_lookup
         self.pool = DecoderPool(decoder_capacity)
         self._images: dict[str, Optional[QImage]] = {}
         self._scaled: "OrderedDict[tuple, np.ndarray]" = OrderedDict()
@@ -156,7 +159,8 @@ class Compositor:
             return None
         if media.is_still:
             return self._still(media.id, media.path, w, h)
-        dec = self.pool.get(clip.id, media.path)
+        path = (self.proxy_lookup(media.path) if self.proxy_lookup else None) or media.path
+        dec = self.pool.get(clip.id, path)
         if dec is None:
             return None
         src_t = clip.source_time(t)
